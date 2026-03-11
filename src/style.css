@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --color-zen-green-50: #f2f9f5;
+  --color-zen-green-100: #e1f3e8;
+  --color-zen-green-200: #c5e8d3;
+  --color-zen-green-300: #9ad6b6;
+  --color-zen-green-400: #68be93;
+  --color-zen-green-500: #42a278;
+  --color-zen-green-600: #30825e;
+  --color-zen-green-700: #26684d;
+  --color-zen-green-800: #21533f;
+  --color-zen-green-900: #1c4435;
+}
