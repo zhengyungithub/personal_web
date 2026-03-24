@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>医生问诊 - 乐龄生活</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7AA968',
+                        secondary: '#F4A460',
+                        error: '#ef4444'
+                    },
+                    borderRadius: {
+                        'none': '0px',
+                        'sm': '4px',
+                        DEFAULT: '8px',
+                        'md': '12px',
+                        'lg': '16px',
+                        'xl': '20px',
+                        '2xl': '24px',
+                        '3xl': '32px',
+                        'full': '9999px',
+                        'button': '8px'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            min-height: 1024px;
+            background-color: #F8F9FA;
+        }
+
+        .error-message {
+            color: #f5222d;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .nav-item {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: #6B8E51;
+            font-weight: 500;
+        }
+
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #6B8E51;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .menu-item:hover {
+            background-color: rgba(107, 142, 81, 0.1);
+        }
+
+        .menu-item.active {
+            background-color: rgba(107, 142, 81, 0.1);
+            color: #6B8E51;
+            font-weight: 500;
+        }
+
+        /* 咨询卡片样式 */
+        .consultation-card {
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+
+        .consultation-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .consultation-card.unread {
+            border-left-color: #6B8E51;
+            background-color: rgba(107, 142, 81, 0.05);
+        }
+
+        /* 主要按钮样式 */
+        .bg-primary {
+            background-color: #6B8E51;
+        }
+
+        .text-primary {
+            color: #6B8E51;
+        }
+
+        .border-primary {
+            border-color: #6B8E51;
+        }
+
+        /* 按钮基础样式 */
+        .rounded-button {
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        /* 悬停效果 */
+        .bg-primary:hover {
+            background-color: #5a7c4a;
+        }
+
+        .border-primary:hover {
+            background-color: #6B8E51;
+            color: white;
+        }
+
+        /* 头像下拉菜单样式 */
+        .avatar-dropdown {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+            width: 160px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 100;
+            display: none;
+        }
+
+        .avatar-dropdown.show {
+            display: block;
+        }
+
+        .avatar-dropdown-item {
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .avatar-dropdown-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .avatar-dropdown-item i {
+            margin-right: 8px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* 回复区域样式 */
+        .reply-section {
+            border-top: 1px solid #eee;
+            margin-top: 16px;
+            padding-top: 16px;
+        }
+
+        .reply-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: vertical;
+        }
+
+        .reply-textarea:focus {
+            outline: none;
+            border-color: #6B8E51;
+        }
+
+        /* 消息气泡样式 */
+        .message-bubble {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .user-message {
+            background-color: #E6F7E0;
+            align-self: flex-end;
+            border-bottom-right-radius: 0;
+        }
+
+        .doctor-message {
+            background-color: #f0f0f0;
+            align-self: flex-start;
+            border-bottom-left-radius: 0;
+        }
+
+        /* 报告摘要卡片 */
+        .report-summary {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+
+        /* 风险等级标签 */
+        .risk-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .risk-low {
+            background-color: #E6F7E0;
+            color: #52C41A;
+        }
+
+        .risk-medium {
+            background-color: #FFF7E6;
+            color: #FA8C16;
+        }
+
+        .risk-high {
+            background-color: #FFECE6;
+            color: #F5222D;
+        }
+
+        /* 新增样式 */
+        .consultation-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .consultation-item {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 4px solid transparent;
+        }
+
+        .consultation-item.unread {
+            border-left-color: #6B8E51;
+            background-color: rgba(107, 142, 81, 0.05);
+        }
+
+        .consultation-item:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .consultation-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .consultation-item-content {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .consultation-item-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .consultation-detail {
+            display: none;
+            margin-top: 16px;
+            padding: 16px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .consultation-detail.active {
+            display: block;
+        }
+
+        .tab-container {
+            display: flex;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 16px;
+        }
+
+        .tab-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .tab-item.active {
+            color: #6B8E51;
+            font-weight: 500;
+        }
+
+        .tab-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #6B8E51;
+        }
+
+        .status-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background-color: #FFF7E6;
+            color: #FA8C16;
+        }
+
+        .status-completed {
+            background-color: #E6F7E0;
+            color: #52C41A;
+        }
+
+        .status-followup {
+            background-color: #E6F7FF;
+            color: #1890FF;
+        }
+
+        /* 内容区域切换样式 */
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+<header class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
+    <nav class="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-8">
+            <a href="/" class="text-2xl font-['Pacifico'] text-primary">乐龄生活</a>
+            <div class="hidden lg:flex space-x-6">
+                <a href="/" class="nav-link text-gray-600 hover:text-primary transition-colors">首页</a>
+                <div class="dropdown relative">
+                    <a href="#" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">健康管理</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="/健康档案管理" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">健康档案管理</a>
+                        <a href="/医生咨询" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">医生咨询</a>
+                    </div>
+                </div>
+                <div class="dropdown relative">
+                    <a href="#" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">我的工作台</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="/待处理咨询" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">待处理咨询</a>
+                        <a href="/已处理咨询" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">已处理咨询</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="errorAlert" class="hidden fixed top-20 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <span class="font-bold">错误!</span>
+            <span id="errorMessage"></span>
+            <span class="absolute top-0 bottom-0 right-0 px-4 py-3" onclick="document.getElementById('errorAlert').classList.add('hidden')">
+                <i class="fas fa-times"></i>
+            </span>
+        </div>
+        <div class="flex items-center space-x-6">
+            <div class="relative">
+                <input type="search" placeholder="搜索咨询" class="search-input w-64 h-10 pl-10 pr-4 rounded-full border border-gray-200 focus:outline-none focus:border-primary text-sm">
+                <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            </div>
+            <div class="relative">
+                <button id="notificationBtn" class="w-10 h-10 flex items-center justify-center relative cursor-pointer">
+                    <i class="ri-notification-3-line text-xl text-gray-600"></i>
+                    <span class="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-xs rounded-full flex items-center justify-center">3</span>
+                </button>
+            </div>
+            <div class="relative">
+                <button id="avatarBtn" class="w-10 h-10 flex items-center justify-center cursor-pointer">
+                    <i class="ri-user-line text-xl text-gray-600"></i>
+                </button>
+                <!-- 头像下拉菜单 -->
+                <div id="avatarDropdown" class="avatar-dropdown">
+                    <div class="avatar-dropdown-item" onclick="showProfile()">
+                        <i class="ri-user-line"></i>
+                        <span>个人信息</span>
+                    </div>
+                    <div class="avatar-dropdown-item" onclick="logout()">
+                        <i class="ri-logout-box-r-line"></i>
+                        <span>退出登录</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<div class="w-[1440px] mx-auto pt-16">
+    <main class="flex min-h-[calc(100vh-64px)]">
+        <aside class="w-64 bg-white border-r p-4">
+            <div class="text-lg font-medium mb-4">医生工作台</div>
+            <div class="space-y-1">
+                <div class="menu-item active" onclick="switchSection('pending-consultations', this)">
+                    <i class="fas fa-inbox mr-3 text-gray-400"></i>
+                    <span>待处理咨询</span>
+                    <span class="ml-auto bg-primary text-white text-xs px-2 py-1 rounded-full">5</span>
+                </div>
+                <div class="menu-item" onclick="switchSection('completed-consultations', this)">
+                    <i class="fas fa-check-circle mr-3 text-gray-400"></i>
+                    <span>已处理咨询</span>
+                </div>
+                <div class="menu-item" onclick="switchSection('my-schedule', this)">
+                    <i class="fas fa-calendar-alt mr-3 text-gray-400"></i>
+                    <span>我的日程</span>
+                </div>
+                <div class="menu-item" onclick="switchSection('patient-management', this)">
+                    <i class="fas fa-users mr-3 text-gray-400"></i>
+                    <span>患者管理</span>
+                </div>
+                <div class="menu-item" onclick="switchSection('consultation-stats', this)">
+                    <i class="fas fa-chart-pie mr-3 text-gray-400"></i>
+                    <span>咨询统计</span>
+                </div>
+            </div>
+        </aside>
+
+        <div class="flex-1 p-8">
+            <!-- 待处理咨询区域 -->
+            <div id="pending-consultations" class="content-section active">
+                <div class="mb-8">
+                    <h1 class="text-2xl font-medium mb-2">待处理咨询</h1>
+                    <p class="text-gray-500">您有5条未处理的健康咨询</p>
+                </div>
+
+                <!-- 标签页 -->
+                <div class="tab-container">
+                    <div class="tab-item active" onclick="switchTab('pending')">待回复 (5)</div>
+                    <div class="tab-item" onclick="switchTab('completed')">已回复 (12)</div>
+                    <div class="tab-item" onclick="switchTab('followup')">待跟进 (3)</div>
+                </div>
+
+            <!-- 搜索和筛选 -->
+            <div class="flex justify-between items-center mb-4">
+                <div class="relative">
+                    <input type="search" id="consultationSearch" placeholder="搜索咨询内容或患者姓名" class="w-64 h-10 pl-10 pr-4 rounded-full border border-gray-200 focus:outline-none focus:border-primary text-sm">
+                    <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <div class="flex space-x-2">
+                    <select id="consultationFilter" class="px-3 py-2 border border-gray-200 rounded-button text-sm">
+                        <option value="all">所有类型</option>
+                        <option value="高血压">高血压</option>
+                        <option value="糖尿病">糖尿病</option>
+                        <option value="头晕">头晕</option>
+                        <option value="膝关节疼痛">膝关节疼痛</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 咨询列表 -->
+            <div class="consultation-list" id="consultationList">
+                <!-- 待回复咨询项 -->
+                <div class="consultation-item unread" onclick="toggleConsultationDetail('consultation1')">
+                    <div class="consultation-item-header">
+                        <div>
+                            <span class="font-medium">咨询 #CON-20230521-001</span>
+                            <span class="status-tag status-pending ml-2">待回复</span>
+                        </div>
+                        <div class="text-sm text-gray-500">2023-05-21 14:30</div>
+                    </div>
+                    <div class="consultation-item-content">
+                        医生您好，我的血压最近一直偏高，今早测量为145/95。报告显示我是中风险，但我平时没有明显不适。请问这种情况需要服药吗？还是可以通过生活方式调整改善？另外，我的饮食需要注意什么？
+                    </div>
+                    <div class="consultation-item-footer">
+                        <div>
+                            <span>张伟 (65岁)</span>
+                            <span class="ml-3">高血压</span>
+                        </div>
+                        <div>
+                            <i class="fas fa-paperclip mr-1"></i>
+                            <span>有附件</span>
+                        </div>
+                    </div>
+
+                    <!-- 咨询详情 (默认隐藏) -->
+                    <div class="consultation-detail" id="consultation1">
+                        <!-- 患者信息 -->
+                        <div class="flex items-center space-x-4 mb-6">
+                            <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                                <i class="fas fa-user text-gray-500 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-medium">张伟 (65岁)</h4>
+                                <div class="text-sm text-gray-500">ID: USR-2023001 | 注册时间: 2023-01-15</div>
+                            </div>
+                        </div>
+
+                        <!-- 关联报告摘要 -->
+                        <div class="report-summary">
+                            <h4 class="font-medium mb-2">关联健康报告</h4>
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <div>报告日期: 2023-05-20</div>
+                                    <div>评估结果:
+                                        <span class="risk-tag risk-medium">中风险</span>
+                                    </div>
+                                </div>
+                                <button class="text-primary hover:text-primary-dark text-sm">
+                                    <i class="fas fa-external-link-alt mr-1"></i>查看完整报告
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 咨询问题 -->
+                        <div class="mb-6">
+                            <h4 class="font-medium mb-2">咨询问题</h4>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p>医生您好，我的血压最近一直偏高，今早测量为145/95。报告显示我是中风险，但我平时没有明显不适。请问这种情况需要服药吗？还是可以通过生活方式调整改善？另外，我的饮食需要注意什么？</p>
+                            </div>
+                        </div>
+
+                        <!-- 回复区域 -->
+                        <div class="reply-section">
+                            <h4 class="font-medium mb-3">回复咨询</h4>
+                            
+                            <!-- 工具栏 -->
+                            <div class="flex items-center space-x-2 mb-3 text-sm text-gray-600">
+                                <button class="px-2 py-1 hover:bg-gray-100 rounded" title="粗体" onclick="formatText('bold', this.closest('.consultation-detail').id)">
+                                    <i class="fas fa-bold"></i>
+                                </button>
+                                <button class="px-2 py-1 hover:bg-gray-100 rounded" title="斜体" onclick="formatText('italic', this.closest('.consultation-detail').id)">
+                                    <i class="fas fa-italic"></i>
+                                </button>
+                                <button class="px-2 py-1 hover:bg-gray-100 rounded" title="下划线" onclick="formatText('underline', this.closest('.consultation-detail').id)">
+                                    <i class="fas fa-underline"></i>
+                                </button>
+                                <button class="px-2 py-1 hover:bg-gray-100 rounded" title="项目符号" onclick="formatText('bullet', this.closest('.consultation-detail').id)">
+                                    <i class="fas fa-list-ul"></i>
+                                </button>
+                                <button class="px-2 py-1 hover:bg-gray-100 rounded" title="编号列表" onclick="formatText('number', this.closest('.consultation-detail').id)">
+                                    <i class="fas fa-list-ol"></i>
+                                </button>
+                                <div class="flex-1"></div>
+                                <div class="text-xs text-gray-400" id="charCount_consultation1">0/2000</div>
+                            </div>
+                            
+                            <!-- 回复内容 -->
+                            <textarea class="reply-textarea" placeholder="请输入您的专业回复..." oninput="updateCharCount(this, 'consultation1')" onkeydown="handleKeyPress(event, 'consultation1')"></textarea>
+                            
+                            <!-- 模板选择 -->
+                            <div class="mt-2">
+                                <select class="text-sm border border-gray-200 rounded-button px-3 py-1" onchange="applyTemplate(this, 'consultation1')">
+                                    <option value="">快速回复模板</option>
+                                    <option value="血压建议">高血压管理建议</option>
+                                    <option value="糖尿病建议">糖尿病管理建议</option>
+                                    <option value="随访提醒">随访提醒</option>
+                                </select>
+                            </div>
+                            
+                            <div class="flex justify-end space-x-3 mt-3">
+                                <button class="px-4 py-2 border border-gray-300 rounded-button" id="draftBtn_consultation1">
+                                    <i class="fas fa-save mr-2"></i>保存草稿
+                                </button>
+                                <button class="px-6 py-2 bg-primary text-white rounded-button" id="submitBtn_consultation1">
+                                    <i class="fas fa-paper-plane mr-2"></i>发送回复
+                                </button>
+                            </div>
+                            
+                            <!-- 状态提示 -->
+                            <div class="mt-2 text-xs text-gray-500" id="replyStatus_consultation1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 另一个待回复咨询项 -->
+                <div class="consultation-item unread" onclick="toggleConsultationDetail('consultation2')">
+                    <div class="consultation-item-header">
+                        <div>
+                            <span class="font-medium">咨询 #CON-20230520-002</span>
+                            <span class="status-tag status-pending ml-2">待回复</span>
+                        </div>
+                        <div class="text-sm text-gray-500">2023-05-20 09:15</div>
+                    </div>
+                    <div class="consultation-item-content">
+                        医生您好，我最近总是感觉头晕，特别是起床时，有时还会眼前发黑。我有10年的高血压病史，一直在服药。这种情况需要调整药物吗？
+                    </div>
+                    <div class="consultation-item-footer">
+                        <div>
+                            <span>李芳 (72岁)</span>
+                            <span class="ml-3">高血压, 头晕</span>
+                        </div>
+                        <div>
+                            <i class="fas fa-paperclip mr-1"></i>
+                            <span>有附件</span>
+                        </div>
+                    </div>
+
+                    <!-- 咨询详情 (默认隐藏) -->
+                    <div class="consultation-detail" id="consultation2">
+                        <!-- 患者信息 -->
+                        <div class="flex items-center space-x-4 mb-6">
+                            <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                                <i class="fas fa-user text-gray-500 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-medium">李芳 (72岁)</h4>
+                                <div class="text-sm text-gray-500">ID: USR-2022005 | 注册时间: 2022-08-10</div>
+                            </div>
+                        </div>
+
+                        <!-- 关联报告摘要 -->
+                        <div class="report-summary">
+                            <h4 class="font-medium mb-2">关联健康报告</h4>
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <div>报告日期: 2023-05-18</div>
+                                    <div>评估结果:
+                                        <span class="risk-tag risk-high">高风险</span>
+                                    </div>
+                                </div>
+                                <button class="text-primary hover:text-primary-dark text-sm">
+                                    <i class="fas fa-external-link-alt mr-1"></i>查看完整报告
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 咨询问题 -->
+                        <div class="mb-6">
+                            <h4 class="font-medium mb-2">咨询问题</h4>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p>医生您好，我最近总是感觉头晕，特别是起床时，有时还会眼前发黑。我有10年的高血压病史，一直在服药。这种情况需要调整药物吗？</p>
+                            </div>
+                        </div>
+
+                        <!-- 回复区域 -->
+                        <div class="reply-section">
+                            <h4 class="font-medium mb-3">回复咨询</h4>
+                            
+                            <!-- 工具栏 -->
+                            <div class="flex items-center space-x-2 mb-3 text-sm text-gray-600">
+                                <button class="px-2 py-1 hover:bg-gray-100 rounded" title="粗体" onclick="formatText('bold', this.closest('.consultation-detail').id)">
+                                    <i class="fas fa-bold"></i>
+                                </button>
+                                <button class="px-2 py-1 hover:bg-gray-100 rounded" title="斜体" onclick="formatText('italic', this.closest('.consultation-detail').id)">
+                                    <i class="fas fa-italic"></i>
+                                </button>
+                                <button class="px-2 py-1 hover:bg-gray-100 rounded" title="下划线" onclick="formatText('underline', this.closest('.consultation-detail').id)">
+                                    <i class="fas fa-underline"></i>
+                                </button>
+                                <button class="px-2 py-1 hover:bg-gray-100 rounded" title="项目符号" onclick="formatText('bullet', this.closest('.consultation-detail').id)">
+                                    <i class="fas fa-list-ul"></i>
+                                </button>
+                                <button class="px-2 py-1 hover:bg-gray-100 rounded" title="编号列表" onclick="formatText('number', this.closest('.consultation-detail').id)">
+                                    <i class="fas fa-list-ol"></i>
+                                </button>
+                                <div class="flex-1"></div>
+                                <div class="text-xs text-gray-400" id="charCount_consultation2">0/2000</div>
+                            </div>
+                            
+                            <!-- 回复内容 -->
+                            <textarea class="reply-textarea" placeholder="请输入您的专业回复..." oninput="updateCharCount(this, 'consultation2')" onkeydown="handleKeyPress(event, 'consultation2')"></textarea>
+                            
+                            <!-- 模板选择 -->
+                            <div class="mt-2">
+                                <select class="text-sm border border-gray-200 rounded-button px-3 py-1" onchange="applyTemplate(this, 'consultation2')">
+                                    <option value="">快速回复模板</option>
+                                    <option value="血压建议">高血压管理建议</option>
+                                    <option value="糖尿病建议">糖尿病管理建议</option>
+                                    <option value="随访提醒">随访提醒</option>
+                                </select>
+                            </div>
+                            
+                            <div class="flex justify-end space-x-3 mt-3">
+                                <button class="px-4 py-2 border border-gray-300 rounded-button" id="draftBtn_consultation2">
+                                    <i class="fas fa-save mr-2"></i>保存草稿
+                                </button>
+                                <button class="px-6 py-2 bg-primary text-white rounded-button" id="submitBtn_consultation2">
+                                    <i class="fas fa-paper-plane mr-2"></i>发送回复
+                                </button>
+                            </div>
+                            
+                            <!-- 状态提示 -->
+                            <div class="mt-2 text-xs text-gray-500" id="replyStatus_consultation2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 已回复的咨询项 (默认隐藏) -->
+                <div class="consultation-item hidden completed-item" onclick="toggleConsultationDetail('consultation3')">
+                    <div class="consultation-item-header">
+                        <div>
+                            <span class="font-medium">咨询 #CON-20230518-003</span>
+                            <span class="status-tag status-completed ml-2">已回复</span>
+                        </div>
+                        <div class="text-sm text-gray-500">2023-05-18 16:45</div>
+                    </div>
+                    <div class="consultation-item-content">
+                        医生，我上周咨询的膝关节疼痛问题，按照您的建议做了热敷和适度运动，疼痛有所缓解，但上下楼梯时还是会有不适感...
+                    </div>
+                    <div class="consultation-item-footer">
+                        <div>
+                            <span>王建国 (68岁)</span>
+                            <span class="ml-3">膝关节疼痛</span>
+                        </div>
+                        <div>
+                            <i class="fas fa-comment mr-1"></i>
+                            <span>1条新消息</span>
+                        </div>
+                    </div>
+
+                    <!-- 咨询详情 (默认隐藏) -->
+                    <div class="consultation-detail" id="consultation3">
+                        <!-- 患者信息 -->
+                        <div class="flex items-center space-x-4 mb-6">
+                            <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                                <i class="fas fa-user text-gray-500 text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-medium">王建国 (68岁)</h4>
+                                <div class="text-sm text-gray-500">ID: USR-2021003 | 注册时间: 2021-11-22</div>
+                            </div>
+                        </div>
+
+                        <!-- 消息历史 -->
+                        <div class="mb-6">
+                            <h4 class="font-medium mb-4">咨询记录</h4>
+                            <div class="space-y-4">
+                                <!-- 用户初始消息 -->
+                                <div class="flex flex-col">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm text-gray-500">王建国 · 2023-05-18 16:45</span>
+                                    </div>
+                                    <div class="message-bubble user-message">
+                                        <p>医生您好，我最近右膝关节疼痛，特别是上下楼梯和久坐后起身时。没有受过外伤，疼痛已经持续两周了。请问这可能是什么原因？需要做哪些检查？</p>
+                                    </div>
+                                </div>
+
+                                <!-- 医生回复 -->
+                                <div class="flex flex-col">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm text-gray-500">李医生 · 2023-05-19 09:30</span>
+                                    </div>
+                                    <div class="message-bubble doctor-message">
+                                        <p>王先生您好，根据您的描述，可能是膝关节退行性变或轻度滑膜炎。建议：</p>
+                                        <ol class="list-decimal pl-5 mt-2 space-y-1">
+                                            <li>避免爬楼梯和负重</li>
+                                            <li>每天热敷膝关节15-20分钟</li>
+                                            <li>适度进行直腿抬高和游泳等运动</li>
+                                            <li>可短期使用非甾体抗炎药缓解症状</li>
+                                        </ol>
+                                        <p class="mt-2">如2周后无改善，建议来院做膝关节X光检查。</p>
+                                    </div>
+                                </div>
+
+                                <!-- 用户回复 -->
+                                <div class="flex flex-col">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm text-gray-500">王建国 · 2023-05-21 10:15</span>
+                                    </div>
+                                    <div class="message-bubble user-message">
+                                        <p>医生，我上周咨询的膝关节疼痛问题，按照您的建议做了热敷和适度运动，疼痛有所缓解，但上下楼梯时还是会有不适感。这种情况需要进一步检查吗？</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 回复区域 -->
+                        <div class="reply-section">
+                            <h4 class="font-medium mb-3">继续回复</h4>
+                            
+                            <!-- 工具栏 -->
+                            <div class="flex items-center space-x-2 mb-3 text-sm text-gray-600">
+                                <button class="px-2 py-1 hover:bg-gray-100 rounded" title="粗体" onclick="formatText('bold', this.closest('.consultation-detail').id)">
+                                    <i class="fas fa-bold"></i>
+                                </button>
+                                <button class="px-2 py-1 hover:bg-gray-100 rounded" title="斜体" onclick="formatText('italic', this.closest('.consultation-detail').id)">
+                                    <i class="fas fa-italic"></i>
+                                </button>
+                                <button class="px-2 py-1 hover:bg-gray-100 rounded" title="下划线" onclick="formatText('underline', this.closest('.consultation-detail').id)">
+                                    <i class="fas fa-underline"></i>
+                                </button>
+                                <button class="px-2 py-1 hover:bg-gray-100 rounded" title="项目符号" onclick="formatText('bullet', this.closest('.consultation-detail').id)">
+                                    <i class="fas fa-list-ul"></i>
+                                </button>
+                                <button class="px-2 py-1 hover:bg-gray-100 rounded" title="编号列表" onclick="formatText('number', this.closest('.consultation-detail').id)">
+                                    <i class="fas fa-list-ol"></i>
+                                </button>
+                                <div class="flex-1"></div>
+                                <div class="text-xs text-gray-400" id="charCount_consultation3">0/2000</div>
+                            </div>
+                            
+                            <!-- 回复内容 -->
+                            <textarea class="reply-textarea" placeholder="请输入您的专业回复..." oninput="updateCharCount(this, 'consultation3')" onkeydown="handleKeyPress(event, 'consultation3')"></textarea>
+                            
+                            <!-- 模板选择 -->
+                            <div class="mt-2">
+                                <select class="text-sm border border-gray-200 rounded-button px-3 py-1" onchange="applyTemplate(this, 'consultation3')">
+                                    <option value="">快速回复模板</option>
+                                    <option value="血压建议">高血压管理建议</option>
+                                    <option value="糖尿病建议">糖尿病管理建议</option>
+                                    <option value="随访提醒">随访提醒</option>
+                                </select>
+                            </div>
+                            
+                            <div class="flex justify-end space-x-3 mt-3">
+                                <button class="px-4 py-2 border border-gray-300 rounded-button" id="draftBtn_consultation3">
+                                    <i class="fas fa-save mr-2"></i>保存草稿
+                                </button>
+                                <button class="px-6 py-2 bg-primary text-white rounded-button" id="submitBtn_consultation3">
+                                    <i class="fas fa-paper-plane mr-2"></i>发送回复
+                                </button>
+                            </div>
+                            
+                            <!-- 状态提示 -->
+                            <div class="mt-2 text-xs text-gray-500" id="replyStatus_consultation3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 已处理咨询区域 -->
+        <div id="completed-consultations" class="content-section">
+            <div class="mb-8">
+                <h1 class="text-2xl font-medium mb-2">已处理咨询</h1>
+                <p class="text-gray-500">查看所有已回复的咨询记录</p>
+            </div>
+            <div class="bg-white rounded-lg p-8 text-center text-gray-500">
+                <i class="fas fa-check-circle text-4xl mb-4 text-gray-300"></i>
+                <p>已处理咨询列表加载中...</p>
+            </div>
+        </div>
+
+        <!-- 我的日程区域 -->
+        <div id="my-schedule" class="content-section">
+            <div class="mb-8">
+                <h1 class="text-2xl font-medium mb-2">我的日程</h1>
+                <p class="text-gray-500">管理您的日程安排</p>
+            </div>
+            <div class="bg-white rounded-lg p-8 text-center text-gray-500">
+                <i class="fas fa-calendar-alt text-4xl mb-4 text-gray-300"></i>
+                <p>日程管理功能开发中...</p>
+            </div>
+        </div>
+
+        <!-- 患者管理区域 -->
+        <div id="patient-management" class="content-section">
+            <div class="mb-8">
+                <h1 class="text-2xl font-medium mb-2">患者管理</h1>
+                <p class="text-gray-500">管理您的患者信息</p>
+            </div>
+            <div class="bg-white rounded-lg p-8 text-center text-gray-500">
+                <i class="fas fa-users text-4xl mb-4 text-gray-300"></i>
+                <p>患者管理功能开发中...</p>
+            </div>
+        </div>
+
+        <!-- 咨询统计区域 -->
+        <div id="consultation-stats" class="content-section">
+            <div class="mb-8">
+                <h1 class="text-2xl font-medium mb-2">咨询统计</h1>
+                <p class="text-gray-500">查看咨询数据分析</p>
+            </div>
+            <div class="bg-white rounded-lg p-8 text-center text-gray-500">
+                <i class="fas fa-chart-pie text-4xl mb-4 text-gray-300"></i>
+                <p>咨询统计功能开发中...</p>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // 全局变量
+    let currentConsultationId = null;
+    let currentTab = 'pending';
+
+    // 切换内容区域函数
+    function switchSection(sectionId, menuItem) {
+        // 隐藏所有内容区域
+        document.querySelectorAll('.content-section').forEach(section => {
+            section.classList.remove('active');
+        });
+        
+        // 显示选中的内容区域
+        const selectedSection = document.getElementById(sectionId);
+        if (selectedSection) {
+            selectedSection.classList.add('active');
+        }
+        
+        // 更新左侧导航栏样式
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        // 设置当前选中项的样式
+        menuItem.classList.add('active');
+    }
+
+    // 字符计数
+    function updateCharCount(textarea, consultationId) {
+        const content = textarea.value;
+        const charCount = content.length;
+        const maxChars = 2000;
+        
+        const charCountElement = document.getElementById(`charCount_${consultationId}`);
+        if (charCountElement) {
+            charCountElement.textContent = `${charCount}/${maxChars}`;
+            
+            // 超出字符限制时显示警告
+            if (charCount > maxChars) {
+                charCountElement.classList.add('text-red-500');
+                textarea.value = content.substring(0, maxChars);
+                updateCharCount(textarea, consultationId);
+            } else {
+                charCountElement.classList.remove('text-red-500');
+            }
+        }
+    }
+
+    // 键盘快捷键
+    function handleKeyPress(event, consultationId) {
+        // Ctrl+Enter 发送回复
+        if (event.ctrlKey && event.key === 'Enter') {
+            event.preventDefault();
+            submitReply(consultationId);
+        }
+        // Ctrl+S 保存草稿
+        if (event.ctrlKey && event.key === 's') {
+            event.preventDefault();
+            saveDraft(consultationId);
+        }
+    }
+
+    // 文本格式化
+    function formatText(type, consultationId) {
+        const textarea = document.querySelector(`#${consultationId} .reply-textarea`);
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = textarea.value.substring(start, end);
+        
+        let formattedText = '';
+        
+        switch (type) {
+            case 'bold':
+                formattedText = `**${selectedText}**`;
+                break;
+            case 'italic':
+                formattedText = `*${selectedText}*`;
+                break;
+            case 'underline':
+                formattedText = `__${selectedText}__`;
+                break;
+            case 'bullet':
+                formattedText = `• ${selectedText}`;
+                break;
+            case 'number':
+                formattedText = `1. ${selectedText}`;
+                break;
+        }
+        
+        if (formattedText) {
+            const newText = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+            textarea.value = newText;
+            textarea.focus();
+            textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
+            updateCharCount(textarea, consultationId);
+        }
+    }
+
+    // 应用回复模板
+    function applyTemplate(selectElement, consultationId) {
+        const templateType = selectElement.value;
+        const textarea = document.querySelector(`#${consultationId} .reply-textarea`);
+        
+        let templateContent = '';
+        
+        switch (templateType) {
+            case '血压建议':
+                templateContent = `尊敬的患者，
+
+关于您的高血压情况，建议如下：
+
+1. **生活方式调整**：
+   - 低盐饮食（每日盐摄入量不超过5g）
+   - 规律运动（每周至少150分钟中等强度运动）
+   - 戒烟限酒
+   - 保持健康体重
+
+2. **监测建议**：
+   - 每日固定时间测量血压并记录
+   - 保持血压监测日志
+
+3. **用药建议**：
+   - 根据您的血压水平，建议开始降压药物治疗
+   - 请在医生指导下选择适合的降压药物
+
+如您有任何疑问，请随时咨询。
+
+祝您健康！`;
+                break;
+            case '糖尿病建议':
+                templateContent = `尊敬的患者，
+
+关于您的糖尿病管理，建议如下：
+
+1. **饮食管理**：
+   - 控制总热量摄入
+   - 均衡饮食，增加膳食纤维
+   - 定时定量进餐
+
+2. **运动建议**：
+   - 每周至少150分钟中等强度有氧运动
+   - 适当进行力量训练
+   - 运动前后监测血糖
+
+3. **血糖监测**：
+   - 定期监测空腹和餐后血糖
+   - 记录血糖变化趋势
+
+4. **用药指导**：
+   - 按时服用降糖药物
+   - 了解药物的作用机制和副作用
+
+如有任何不适，请及时就医。
+
+祝您健康！`;
+                break;
+            case '随访提醒':
+                templateContent = `尊敬的患者，
+
+您的咨询已收到，建议您：
+
+1. **定期随访**：
+   - 建议您在${new Date().toLocaleDateString()}后1-2周进行复诊
+   - 携带相关检查资料
+
+2. **注意事项**：
+   - 按照医嘱用药
+   - 记录症状变化
+   - 保持健康的生活方式
+
+如您有紧急情况，请立即就医。
+
+祝您健康！`;
+                break;
+        }
+        
+        if (templateContent) {
+            textarea.value = templateContent;
+            updateCharCount(textarea, consultationId);
+            
+            // 显示模板应用成功提示
+            const statusElement = document.getElementById(`replyStatus_${consultationId}`);
+            if (statusElement) {
+                statusElement.textContent = '模板已应用';
+                statusElement.className = 'mt-2 text-xs text-green-500';
+                setTimeout(() => {
+                    statusElement.textContent = '';
+                    statusElement.className = 'mt-2 text-xs text-gray-500';
+                }, 2000);
+            }
+        }
+        
+        // 重置选择
+        selectElement.value = '';
+    }
+
+    // 封装 API 调用的函数
+    const apiClient = {
+        baseUrl: '/api/consultations',
+        token: localStorage.getItem('token') || 'mock_token',
+        maxRetries: 3,
+
+        async getConsultations(status) {
+            return this.retryFetch(`${this.baseUrl}?status=${status}`);
+        },
+
+        async getConsultationDetail(consultationId) {
+            return this.retryFetch(`${this.baseUrl}/${consultationId}`);
+        },
+
+        async submitReply(consultationId, replyContent) {
+            return this.retryFetch(`${this.baseUrl}/${consultationId}/reply`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                },
+                body: JSON.stringify({
+                    content: replyContent
+                })
+            });
+        },
+
+        async markAsCompleted(consultationId) {
+            return this.retryFetch(`${this.baseUrl}/${consultationId}/complete`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.token}`
+                }
+            });
+        },
+
+        async retryFetch(url, options = {}, retries = 0) {
+            if (!this.token) {
+                throw new Error('用户未认证，请重新登录');
+            }
+
+            options.headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${this.token}`,
+                'Accept': 'application/json'
+            };
+
+            try {
+                const response = await fetch(url, options);
+
+                if (!response.ok) {
+                    let errorData;
+                    try {
+                        errorData = await response.json();
+                    } catch {
+                        errorData = { message: await response.text() };
+                    }
+                    throw new Error(errorData.message || `请求失败: ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                if (retries < this.maxRetries) {
+                    console.log(`请求失败，正在进行第 ${retries + 1} 次重试...`);
+                    return this.retryFetch(url, options, retries + 1);
+                }
+                console.error('达到最大重试次数，请求失败:', error);
+                showError(`请求失败: ${error.message}`);
+                throw error;
+            }
+        }
+    };
+
+    function showError(message) {
+        const errorAlert = document.getElementById('errorAlert');
+        const errorMessage = document.getElementById('errorMessage');
+
+        if (errorAlert && errorMessage) {
+            errorMessage.textContent = message;
+            errorAlert.classList.remove('hidden');
+            setTimeout(() => errorAlert.classList.add('hidden'), 5000);
+        } else {
+            alert(message);
+        }
+    }
+
+    function setButtonLoading(button, isLoading) {
+        if (isLoading) {
+            button.innerHTML = '<span class="loading-spinner"></span> ' + button.textContent.trim();
+            button.disabled = true;
+        } else {
+            const icon = button.id.includes('submit') ? 'fa-paper-plane' :
+                button.id.includes('complete') ? 'fa-check' : '';
+            button.innerHTML = icon ? `<i class="fas ${icon} mr-2"></i>${button.textContent.trim()}` : button.textContent;
+            button.disabled = false;
+        }
+    }
+
+    function showProfile() {
+        window.location.href = '/doctor/profile';
+    }
+
+    function logout() {
+        if (confirm('确定要退出登录吗？')) {
+            localStorage.removeItem('token');
+            window.location.href = "/登录";
+        }
+    }
+
+    function toggleConsultationDetail(id) {
+        const detailElement = document.getElementById(id);
+        detailElement.classList.toggle('active');
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+
+        // 更新标签样式
+        document.querySelectorAll('.tab-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        event.target.classList.add('active');
+
+        // 更新列表显示
+        const consultationList = document.getElementById('consultationList');
+        const items = consultationList.querySelectorAll('.consultation-item');
+
+        items.forEach(item => {
+            item.classList.add('hidden');
+
+            if (tab === 'pending' && !item.classList.contains('completed-item')) {
+                item.classList.remove('hidden');
+            } else if (tab === 'completed' && item.classList.contains('completed-item')) {
+                item.classList.remove('hidden');
+            } else if (tab === 'followup') {
+                // 这里可以添加待跟进咨询的逻辑
+            }
+        });
+
+        // 更新标题
+        const titleMap = {
+            'pending': '待处理咨询',
+            'completed': '已回复咨询',
+            'followup': '待跟进咨询'
+        };
+
+        const countMap = {
+            'pending': 5,
+            'completed': 12,
+            'followup': 3
+        };
+
+        document.querySelector('.text-2xl').textContent = titleMap[tab];
+        document.querySelector('.text-gray-500').textContent = `您有${countMap[tab]}条${titleMap[tab]}`;
+    }
+
+    async function loadConsultations(status) {
+        try {
+            const response = await apiClient.getConsultations(status);
+
+            if (response && response.data) {
+                renderConsultationList(response.data);
+            } else {
+                throw new Error('获取咨询列表失败: 服务器返回的数据格式不正确');
+            }
+        } catch (error) {
+            showError('获取咨询列表失败: ' + error.message);
+        }
+    }
+
+    function renderConsultationList(consultations) {
+        // 这里会根据API返回的数据动态生成咨询列表
+        // 实际实现会根据您的具体数据格式进行调整
+    }
+
+    async function loadConsultationDetail(consultationId) {
+        try {
+            const response = await apiClient.getConsultationDetail(consultationId);
+
+            if (response && response.data) {
+                currentConsultationId = consultationId;
+                displayConsultationDetail(response.data);
+            } else {
+                throw new Error('获取咨询详情失败: 服务器返回的数据格式不正确');
+            }
+        } catch (error) {
+            showError('获取咨询详情失败: ' + error.message);
+        }
+    }
+
+    function displayConsultationDetail(consultation) {
+        // 这里填充页面上的各个元素
+        // 例如: document.getElementById('consultationTitle').textContent = `咨询 #${consultation.id}`;
+        // 实际实现会根据您的具体HTML结构和数据格式进行调整
+    }
+
+    async function submitReply(consultationId) {
+        const replyContent = document.querySelector(`#${consultationId} .reply-textarea`).value.trim();
+
+        if (!replyContent) {
+            showError('请输入回复内容');
+            return;
+        }
+
+        try {
+            const submitBtn = document.getElementById(`submitBtn_${consultationId}`);
+            const statusElement = document.getElementById(`replyStatus_${consultationId}`);
+            
+            // 显示提交中状态
+            if (statusElement) {
+                statusElement.textContent = '正在提交回复...';
+                statusElement.className = 'mt-2 text-xs text-blue-500';
+            }
+            
+            setButtonLoading(submitBtn, true);
+
+            const response = await apiClient.submitReply(consultationId, replyContent);
+
+            if (response.success) {
+                // 显示成功通知
+                const successNotification = document.createElement('div');
+                successNotification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 flex items-center';
+                successNotification.innerHTML = `
+                    <i class="ri-check-circle-line mr-2 text-xl"></i>
+                    <span>回复发送成功</span>
+                `;
+                document.body.appendChild(successNotification);
+                
+                // 3秒后移除通知
+                setTimeout(() => {
+                    successNotification.style.opacity = '0';
+                    setTimeout(() => successNotification.remove(), 300);
+                }, 3000);
+                
+                // 刷新咨询记录
+                await loadConsultationDetail(consultationId);
+                // 清空回复框
+                document.querySelector(`#${consultationId} .reply-textarea`).value = '';
+                // 重置字符计数
+                updateCharCount(document.querySelector(`#${consultationId} .reply-textarea`), consultationId);
+                // 重置状态提示
+                if (statusElement) {
+                    statusElement.textContent = '回复已发送';
+                    statusElement.className = 'mt-2 text-xs text-green-500';
+                    setTimeout(() => {
+                        statusElement.textContent = '';
+                        statusElement.className = 'mt-2 text-xs text-gray-500';
+                    }, 3000);
+                }
+            } else {
+                throw new Error(response.message || '回复提交失败');
+            }
+        } catch (error) {
+            showError('提交回复失败: ' + error.message);
+            const statusElement = document.getElementById(`replyStatus_${consultationId}`);
+            if (statusElement) {
+                statusElement.textContent = '提交失败，请重试';
+                statusElement.className = 'mt-2 text-xs text-red-500';
+                setTimeout(() => {
+                    statusElement.textContent = '';
+                    statusElement.className = 'mt-2 text-xs text-gray-500';
+                }, 3000);
+            }
+        }
+    }
+
+    async function markAsCompleted(consultationId) {
+        if (!confirm('确定要标记此咨询为已完成吗？')) return;
+
+        try {
+            const completeBtn = document.querySelector(`#${consultationId} .complete-consultation-btn`);
+            setButtonLoading(completeBtn, true);
+
+            const response = await apiClient.markAsCompleted(consultationId);
+
+            if (response.success) {
+// 刷新列表
+                await loadConsultations(currentTab);
+// 关闭详情面板
+                document.getElementById(consultationId).classList.remove('active');
+            } else {
+                throw new Error(response.message || '标记完成失败');
+            }
+        } catch (error) {
+            showError('标记完成失败: ' + error.message);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化加载待处理咨询
+        loadConsultations('pending');
+
+        // 阻止详情区域的点击事件冒泡
+        document.querySelectorAll('.consultation-detail').forEach(detail => {
+            detail.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
+
+        // 设置头像下拉菜单
+        document.getElementById('avatarBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.getElementById('avatarDropdown').classList.toggle('show');
+        });
+
+        // 点击页面其他地方时隐藏下拉菜单
+        document.addEventListener('click', function() {
+            document.getElementById('avatarDropdown').classList.remove('show');
+        });
+
+        // 搜索和筛选功能
+        document.getElementById('consultationSearch').addEventListener('input', function() {
+            filterConsultations();
+        });
+
+        document.getElementById('consultationFilter').addEventListener('change', function() {
+            filterConsultations();
+        });
+
+        // 为所有回复按钮设置点击事件
+        document.querySelectorAll('.reply-section button').forEach(button => {
+            if (button.id && button.id.startsWith('submitBtn_')) {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const consultationId = this.closest('.consultation-detail').id;
+                    submitReply(consultationId);
+                });
+            } else if (button.id && button.id.startsWith('draftBtn_')) {
+                button.addEventListener('click', function() {
+                    const consultationId = this.closest('.consultation-detail').id;
+                    saveDraft(consultationId);
+                });
+            }
+        });
+
+        // 为所有查看完整报告按钮设置点击事件
+        document.querySelectorAll('.report-summary button').forEach(button => {
+            button.addEventListener('click', function() {
+                showReportDetail(this.closest('.consultation-item').id);
+            });
+        });
+    });
+
+    // 搜索和筛选咨询
+    function filterConsultations() {
+        const searchTerm = document.getElementById('consultationSearch').value.toLowerCase();
+        const filterTerm = document.getElementById('consultationFilter').value;
+        
+        const consultationItems = document.querySelectorAll('.consultation-item');
+        
+        consultationItems.forEach(item => {
+            const patientName = item.querySelector('.consultation-item-footer span').textContent.toLowerCase();
+            const consultationContent = item.querySelector('.consultation-item-content').textContent.toLowerCase();
+            const consultationTags = item.querySelector('.consultation-item-footer').textContent.toLowerCase();
+            
+            const matchesSearch = searchTerm === '' || 
+                patientName.includes(searchTerm) || 
+                consultationContent.includes(searchTerm) ||
+                consultationTags.includes(searchTerm);
+            
+            const matchesFilter = filterTerm === 'all' || consultationTags.includes(filterTerm);
+            
+            if (matchesSearch && matchesFilter) {
+                item.classList.remove('hidden');
+            } else {
+                item.classList.add('hidden');
+            }
+        });
+    }
+
+    // 保存草稿
+    function saveDraft(consultationId) {
+        const replyContent = document.querySelector(`#${consultationId} .reply-textarea`).value.trim();
+        const draftBtn = document.getElementById(`draftBtn_${consultationId}`);
+        const statusElement = document.getElementById(`replyStatus_${consultationId}`);
+        
+        if (!replyContent) {
+            showError('请输入回复内容');
+            return;
+        }
+        
+        // 显示保存中状态
+        if (statusElement) {
+            statusElement.textContent = '正在保存草稿...';
+            statusElement.className = 'mt-2 text-xs text-blue-500';
+        }
+        
+        // 模拟保存操作
+        setTimeout(() => {
+            // 显示保存成功通知
+            const successNotification = document.createElement('div');
+            successNotification.className = 'fixed bottom-4 right-4 bg-blue-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 flex items-center';
+            successNotification.innerHTML = `
+                <i class="ri-save-line mr-2 text-xl"></i>
+                <span>草稿保存成功</span>
+            `;
+            document.body.appendChild(successNotification);
+            
+            // 3秒后移除通知
+            setTimeout(() => {
+                successNotification.style.opacity = '0';
+                setTimeout(() => successNotification.remove(), 300);
+            }, 3000);
+            
+            // 重置状态提示
+            if (statusElement) {
+                statusElement.textContent = '草稿已保存';
+                statusElement.className = 'mt-2 text-xs text-green-500';
+                setTimeout(() => {
+                    statusElement.textContent = '';
+                    statusElement.className = 'mt-2 text-xs text-gray-500';
+                }, 3000);
+            }
+        }, 1000);
+    }
+
+    // 显示报告详情
+    function showReportDetail(consultationId) {
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg p-6 max-w-3xl w-full mx-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-medium">健康报告详情</h3>
+                    <button class="close-modal text-gray-500 hover:text-gray-700">
+                        <i class="ri-close-line text-xl"></i>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-sm text-gray-500">报告日期</p>
+                        <p class="font-medium">2023-05-20</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">评估结果</p>
+                        <p class="font-medium">
+                            <span class="risk-tag risk-medium">中风险</span>
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">主要指标</p>
+                        <div class="grid grid-cols-2 gap-4 mt-2">
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <p class="text-sm text-gray-600">血压</p>
+                                <p class="font-medium">145/95 mmHg</p>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <p class="text-sm text-gray-600">血糖</p>
+                                <p class="font-medium">5.6 mmol/L</p>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <p class="text-sm text-gray-600">心率</p>
+                                <p class="font-medium">78 次/分</p>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <p class="text-sm text-gray-600">体重指数</p>
+                                <p class="font-medium">24.5</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">医生建议</p>
+                        <p class="font-medium">建议调整生活方式，减少盐分摄入，增加有氧运动，定期监测血压变化。</p>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button class="close-modal px-6 py-2 bg-gray-200 text-gray-700 rounded-button hover:bg-gray-300 transition-colors">
+                        关闭
+                    </button>
+                    <button class="ml-3 px-6 py-2 bg-primary text-white rounded-button hover:bg-primary/90 transition-colors">
+                        <i class="ri-download-line mr-2"></i>下载报告
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // 关闭模态框
+        modal.querySelectorAll('.close-modal').forEach(button => {
+            button.addEventListener('click', function() {
+                modal.remove();
+            });
+        });
+        
+        // 点击模态框外部关闭
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+
+    // 增强提交回复功能
+    async function submitReply(consultationId) {
+        const replyContent = document.querySelector(`#${consultationId} .reply-textarea`).value.trim();
+
+        if (!replyContent) {
+            showError('请输入回复内容');
+            return;
+        }
+
+        try {
+            const submitBtn = document.querySelector(`#${consultationId} .reply-section button[type="submit"]`);
+            setButtonLoading(submitBtn, true);
+
+            const response = await apiClient.submitReply(consultationId, replyContent);
+
+            if (response.success) {
+                // 显示成功通知
+                const successNotification = document.createElement('div');
+                successNotification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 flex items-center';
+                successNotification.innerHTML = `
+                    <i class="ri-check-circle-line mr-2 text-xl"></i>
+                    <span>回复发送成功</span>
+                `;
+                document.body.appendChild(successNotification);
+                
+                // 3秒后移除通知
+                setTimeout(() => {
+                    successNotification.style.opacity = '0';
+                    setTimeout(() => successNotification.remove(), 300);
+                }, 3000);
+                
+                // 刷新咨询记录
+                await loadConsultationDetail(consultationId);
+                // 清空回复框
+                document.querySelector(`#${consultationId} .reply-textarea`).value = '';
+                
+                // 更新咨询状态
+                const consultationItem = document.querySelector(`[onclick="toggleConsultationDetail('${consultationId}')"]`);
+                if (consultationItem) {
+                    const statusTag = consultationItem.querySelector('.status-tag');
+                    if (statusTag) {
+                        statusTag.textContent = '已回复';
+                        statusTag.className = 'status-tag status-completed ml-2';
+                    }
+                }
+            } else {
+                throw new Error(response.message || '回复提交失败');
+            }
+        } catch (error) {
+            showError('提交回复失败: ' + error.message);
+        } finally {
+            const submitBtn = document.querySelector(`#${consultationId} .reply-section button[type="submit"]`);
+            setButtonLoading(submitBtn, false);
+        }
+    }
+
+    // 增强标记完成功能
+    async function markAsCompleted(consultationId) {
+        if (!confirm('确定要标记此咨询为已完成吗？')) return;
+
+        try {
+            const completeBtn = document.querySelector(`#${consultationId} .complete-consultation-btn`);
+            setButtonLoading(completeBtn, true);
+
+            const response = await apiClient.markAsCompleted(consultationId);
+
+            if (response.success) {
+                // 显示成功通知
+                const successNotification = document.createElement('div');
+                successNotification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 flex items-center';
+                successNotification.innerHTML = `
+                    <i class="ri-check-circle-line mr-2 text-xl"></i>
+                    <span>咨询已标记为完成</span>
+                `;
+                document.body.appendChild(successNotification);
+                
+                // 3秒后移除通知
+                setTimeout(() => {
+                    successNotification.style.opacity = '0';
+                    setTimeout(() => successNotification.remove(), 300);
+                }, 3000);
+                
+                // 刷新列表
+                await loadConsultations(currentTab);
+                // 关闭详情面板
+                document.getElementById(consultationId).classList.remove('active');
+            } else {
+                throw new Error(response.message || '标记完成失败');
+            }
+        } catch (error) {
+            showError('标记完成失败: ' + error.message);
+        } finally {
+            const completeBtn = document.querySelector(`#${consultationId} .complete-consultation-btn`);
+            if (completeBtn) {
+                setButtonLoading(completeBtn, false);
+            }
+        }
+    }
+
+    // 增强咨询详情显示
+    function displayConsultationDetail(consultation) {
+        // 这里填充页面上的各个元素
+        // 例如: document.getElementById('consultationTitle').textContent = `咨询 #${consultation.id}`;
+        // 实际实现会根据您的具体HTML结构和数据格式进行调整
+        
+        // 模拟实现
+        console.log('显示咨询详情:', consultation);
+    }
+</script> </body> </html>

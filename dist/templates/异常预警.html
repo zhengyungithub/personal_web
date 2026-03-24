@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>异常预警 - 乐龄生活</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7AA968',
+                        secondary: '#5B9BD5',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                        success: '#10B981'
+                    },
+                    borderRadius: {
+                        'none': '0px',
+                        'sm': '4px',
+                        DEFAULT: '8px',
+                        'md': '12px',
+                        'lg': '16px',
+                        'xl': '20px',
+                        '2xl': '24px',
+                        '3xl': '32px',
+                        'full': '9999px',
+                        'button': '8px'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .nav-link {
+            padding: 10px 16px;
+            transition: color 0.3s ease, background-color 0.3s ease;
+            font-size: 16px;
+            position: relative;
+            color: #333;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-link:hover {
+            color: #7AA968;
+            background-color: rgba(122, 169, 104, 0.1);
+            border-radius: 8px;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #ffffff;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            z-index: 100;
+            padding: 8px 0;
+            margin-top: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .dropdown-content a {
+            color: #333;
+            padding: 10px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+            color: #7AA968;
+        }
+
+        .warning-card {
+            transition: all 0.3s ease;
+        }
+
+        .warning-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+<header class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
+    <nav class="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-8">
+            <a href="/" class="text-2xl font-['Pacifico'] text-primary">乐龄生活</a>
+            <div class="hidden lg:flex space-x-6">
+                <a href="/" class="nav-link text-gray-600 hover:text-primary transition-colors">首页</a>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-6">
+        </div>
+    </nav>
+</header>
+
+<main class="container mx-auto px-4 pt-24 pb-12">
+    <div class="grid grid-cols-12 gap-8">
+        <div class="col-span-3">
+            <div class="sticky top-24">
+                <div class="bg-white rounded-lg p-6 mb-6">
+                    <h3 class="text-lg font-medium mb-4">预警分类</h3>
+                    <div class="space-y-2">
+                        <button class="w-full text-left px-4 py-2 rounded-lg bg-primary/10 text-primary">全部预警</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">血压异常</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">心率异常</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">血糖异常</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">体温异常</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">其他异常</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg p-6 mb-6">
+                    <h3 class="text-lg font-medium mb-4">预警状态</h3>
+                    <div class="space-y-2">
+                        <button class="w-full text-left px-4 py-2 rounded-lg bg-primary/10 text-primary">全部状态</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">未处理</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">已处理</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">已忽略</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg p-6">
+                    <h3 class="text-lg font-medium mb-4">时间筛选</h3>
+                    <div class="space-y-2">
+                        <button class="w-full text-left px-4 py-2 rounded-lg bg-primary/10 text-primary">全部时间</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">今天</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">近7天</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">近30天</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-span-9">
+            <div class="bg-white rounded-lg p-6 mb-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-medium">健康异常预警</h2>
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <input type="text" placeholder="搜索预警" class="w-64 pl-10 pr-4 py-2 text-sm border rounded-button focus:outline-none focus:border-primary">
+                            <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                        <button class="px-4 py-2 bg-primary text-white rounded-button hover:bg-primary/90 transition-colors">
+                            <i class="ri-refresh-line mr-2"></i>刷新
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- 预警卡片 1 -->
+                    <div class="warning-card bg-white border border-danger/20 rounded-lg p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center">
+                                    <i class="ri-heart-pulse-line text-danger text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-lg">心率异常</h3>
+                                    <p class="text-sm text-gray-500">张三 - 82岁</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 bg-danger/10 text-danger text-xs rounded-full">紧急</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">预警时间</p>
+                                <p class="font-medium">2026-03-19 14:30:25</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">心率值</p>
+                                <p class="font-medium text-danger">120 次/分</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">正常范围</p>
+                                <p class="font-medium">60-100 次/分</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">状态</p>
+                                <p class="font-medium text-warning">未处理</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 mb-4">
+                            老人心率持续超过正常范围，建议立即联系老人或医疗机构进行检查。
+                        </p>
+                        <div class="flex items-center space-x-3">
+                            <button class="px-4 py-2 bg-primary text-white rounded-button hover:bg-primary/90 transition-colors">
+                                <i class="ri-eye-line mr-2"></i>查看详情
+                            </button>
+                            <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-button hover:bg-gray-300 transition-colors">
+                                <i class="ri-check-line mr-2"></i>标记已处理
+                            </button>
+                            <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-button hover:bg-gray-300 transition-colors">
+                                <i class="ri-close-line mr-2"></i>忽略
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 预警卡片 2 -->
+                    <div class="warning-card bg-white border border-warning/20 rounded-lg p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center">
+                                    <i class="ri-blood-drop-line text-warning text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-lg">血压异常</h3>
+                                    <p class="text-sm text-gray-500">李四 - 75岁</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 bg-warning/10 text-warning text-xs rounded-full">中等</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">预警时间</p>
+                                <p class="font-medium">2026-03-19 10:15:42</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">血压值</p>
+                                <p class="font-medium text-warning">145/95 mmHg</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">正常范围</p>
+                                <p class="font-medium">90-139/60-89 mmHg</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">状态</p>
+                                <p class="font-medium text-warning">未处理</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 mb-4">
+                            老人血压略高于正常范围，建议关注并适当调整生活方式，如减少盐分摄入、保持适当运动。
+                        </p>
+                        <div class="flex items-center space-x-3">
+                            <button class="px-4 py-2 bg-primary text-white rounded-button hover:bg-primary/90 transition-colors">
+                                <i class="ri-eye-line mr-2"></i>查看详情
+                            </button>
+                            <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-button hover:bg-gray-300 transition-colors">
+                                <i class="ri-check-line mr-2"></i>标记已处理
+                            </button>
+                            <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-button hover:bg-gray-300 transition-colors">
+                                <i class="ri-close-line mr-2"></i>忽略
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 预警卡片 3 -->
+                    <div class="warning-card bg-white border border-success/20 rounded-lg p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+                                    <i class="ri-droplets-line text-success text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-lg">血糖异常</h3>
+                                    <p class="text-sm text-gray-500">王五 - 78岁</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 bg-success/10 text-success text-xs rounded-full">轻微</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">预警时间</p>
+                                <p class="font-medium">2026-03-18 18:45:10</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">血糖值</p>
+                                <p class="font-medium text-success">7.2 mmol/L</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">正常范围</p>
+                                <p class="font-medium">3.9-6.1 mmol/L</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">状态</p>
+                                <p class="font-medium text-success">已处理</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 mb-4">
+                            老人血糖略高于正常范围，已通过饮食调整和适当运动控制，建议继续监测。
+                        </p>
+                        <div class="flex items-center space-x-3">
+                            <button class="px-4 py-2 bg-primary text-white rounded-button hover:bg-primary/90 transition-colors">
+                                <i class="ri-eye-line mr-2"></i>查看详情
+                            </button>
+                            <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-button hover:bg-gray-300 transition-colors">
+                                <i class="ri-refresh-line mr-2"></i>重新评估
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 预警卡片 4 -->
+                    <div class="warning-card bg-white border border-danger/20 rounded-lg p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center">
+                                    <i class="ri-thermometer-line text-danger text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-lg">体温异常</h3>
+                                    <p class="text-sm text-gray-500">赵六 - 80岁</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 bg-danger/10 text-danger text-xs rounded-full">紧急</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">预警时间</p>
+                                <p class="font-medium">2026-03-18 09:20:33</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">体温值</p>
+                                <p class="font-medium text-danger">38.5 °C</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">正常范围</p>
+                                <p class="font-medium">36.0-37.2 °C</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">状态</p>
+                                <p class="font-medium text-warning">未处理</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 mb-4">
+                            老人体温升高，可能存在感染或其他健康问题，建议立即联系老人并安排就医。
+                        </p>
+                        <div class="flex items-center space-x-3">
+                            <button class="px-4 py-2 bg-primary text-white rounded-button hover:bg-primary/90 transition-colors">
+                                <i class="ri-eye-line mr-2"></i>查看详情
+                            </button>
+                            <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-button hover:bg-gray-300 transition-colors">
+                                <i class="ri-check-line mr-2"></i>标记已处理
+                            </button>
+                            <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-button hover:bg-gray-300 transition-colors">
+                                <i class="ri-close-line mr-2"></i>忽略
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex items-center justify-between">
+                    <div class="text-sm text-gray-500">
+                        共 4 条预警信息
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button class="px-3 py-1 border rounded-button text-gray-600 hover:bg-gray-50 disabled:opacity-50" disabled>
+                            <i class="ri-arrow-left-s-line"></i> 上一页
+                        </button>
+                        <button class="px-3 py-1 border rounded-button bg-primary text-white">1</button>
+                        <button class="px-3 py-1 border rounded-button text-gray-600 hover:bg-gray-50">2</button>
+                        <button class="px-3 py-1 border rounded-button text-gray-600 hover:bg-gray-50">3</button>
+                        <button class="px-3 py-1 border rounded-button text-gray-600 hover:bg-gray-50">
+                            下一页 <i class="ri-arrow-right-s-line"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // 筛选按钮交互
+        const filterButtons = document.querySelectorAll('.bg-white p-6 button');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // 移除同组其他按钮的选中状态
+                const siblings = Array.from(this.parentElement.children);
+                siblings.forEach(sibling => {
+                    sibling.classList.remove('bg-primary/10', 'text-primary');
+                    sibling.classList.add('hover:bg-gray-100');
+                });
+                // 添加当前按钮的选中状态
+                this.classList.add('bg-primary/10', 'text-primary');
+                this.classList.remove('hover:bg-gray-100');
+                
+                // 模拟筛选效果
+                simulateFiltering();
+            });
+        });
+
+        // 预警卡片展开/折叠功能
+        const warningCards = document.querySelectorAll('.warning-card');
+        warningCards.forEach(card => {
+            const cardHeader = card.querySelector('.flex.items-start.justify-between');
+            const cardContent = card.querySelector('.grid.grid-cols-2');
+            
+            cardHeader.addEventListener('click', function() {
+                cardContent.classList.toggle('hidden');
+                const cardBody = card.querySelector('.text-gray-600');
+                cardBody.classList.toggle('hidden');
+            });
+        });
+
+        // 预警处理动画
+        document.querySelectorAll('.warning-card button').forEach(button => {
+            button.addEventListener('click', function() {
+                if (this.textContent.includes('标记已处理')) {
+                    const card = this.closest('.warning-card');
+                    const statusElement = card.querySelector('.font-medium.text-warning');
+                    
+                    if (statusElement) {
+                        // 添加处理动画
+                        card.classList.add('opacity-50');
+                        setTimeout(() => {
+                            statusElement.textContent = '已处理';
+                            statusElement.className = 'font-medium text-success';
+                            card.classList.remove('border-danger/20', 'border-warning/20');
+                            card.classList.add('border-success/20');
+                            
+                            // 更新按钮
+                            const buttons = card.querySelectorAll('button');
+                            buttons.forEach(btn => {
+                                if (btn.textContent.includes('标记已处理')) {
+                                    btn.textContent = '已处理';
+                                    btn.disabled = true;
+                                    btn.classList.add('opacity-50');
+                                }
+                                if (btn.textContent.includes('忽略')) {
+                                    btn.remove();
+                                }
+                            });
+                            
+                            card.classList.remove('opacity-50');
+                        }, 500);
+                    }
+                }
+                
+                if (this.textContent.includes('忽略')) {
+                    const card = this.closest('.warning-card');
+                    card.classList.add('opacity-50');
+                    setTimeout(() => {
+                        card.style.display = 'none';
+                    }, 500);
+                }
+                
+                if (this.textContent.includes('查看详情')) {
+                    showWarningDetails(this.closest('.warning-card'));
+                }
+            });
+        });
+
+        // 刷新按钮动画
+        const refreshButton = document.querySelector('button:has(.ri-refresh-line)');
+        if (refreshButton) {
+            refreshButton.addEventListener('click', function() {
+                const icon = this.querySelector('i');
+                icon.classList.add('animate-spin');
+                
+                // 模拟刷新
+                setTimeout(() => {
+                    icon.classList.remove('animate-spin');
+                    showNotification('预警信息已更新');
+                }, 1000);
+            });
+        }
+
+        // 搜索功能
+        const searchInput = document.querySelector('input[placeholder="搜索预警"]');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const warningCards = document.querySelectorAll('.warning-card');
+                
+                warningCards.forEach(card => {
+                    const title = card.querySelector('h3').textContent.toLowerCase();
+                    const name = card.querySelector('p.text-sm.text-gray-500').textContent.toLowerCase();
+                    const description = card.querySelector('p.text-gray-600').textContent.toLowerCase();
+                    
+                    if (title.includes(searchTerm) || name.includes(searchTerm) || description.includes(searchTerm)) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // 分页交互
+        const pageButtons = document.querySelectorAll('.flex.items-center.space-x-2 button');
+        pageButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                if (!this.disabled) {
+                    // 移除其他页码按钮的选中状态
+                    pageButtons.forEach(btn => {
+                        btn.classList.remove('bg-primary', 'text-white');
+                        btn.classList.add('text-gray-600', 'hover:bg-gray-50');
+                    });
+                    // 添加当前页码按钮的选中状态
+                    this.classList.add('bg-primary', 'text-white');
+                    this.classList.remove('text-gray-600', 'hover:bg-gray-50');
+                    
+                    // 模拟分页加载
+                    simulatePagination();
+                }
+            });
+        });
+
+        // 模拟筛选效果
+        function simulateFiltering() {
+            const warningCards = document.querySelectorAll('.warning-card');
+            warningCards.forEach(card => {
+                card.style.opacity = '0.5';
+            });
+            
+            setTimeout(() => {
+                warningCards.forEach(card => {
+                    card.style.opacity = '1';
+                });
+                showNotification('筛选条件已应用');
+            }, 500);
+        }
+
+        // 模拟分页加载
+        function simulatePagination() {
+            const warningCards = document.querySelectorAll('.warning-card');
+            warningCards.forEach(card => {
+                card.style.opacity = '0.5';
+            });
+            
+            setTimeout(() => {
+                warningCards.forEach(card => {
+                    card.style.opacity = '1';
+                });
+                showNotification('已加载新页面');
+            }, 500);
+        }
+
+        // 显示预警详情
+        function showWarningDetails(card) {
+            // 创建模态框
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.id = 'warningModal';
+            
+            // 获取预警信息
+            const title = card.querySelector('h3').textContent;
+            const name = card.querySelector('p.text-sm.text-gray-500').textContent;
+            const level = card.querySelector('.bg-danger\/10, .bg-warning\/10, .bg-success\/10').textContent;
+            const time = card.querySelectorAll('.grid.grid-cols-2 p.font-medium')[0].textContent;
+            const value = card.querySelectorAll('.grid.grid-cols-2 p.font-medium')[1].textContent;
+            const range = card.querySelectorAll('.grid.grid-cols-2 p.font-medium')[2].textContent;
+            const status = card.querySelectorAll('.grid.grid-cols-2 p.font-medium')[3].textContent;
+            const description = card.querySelector('p.text-gray-600').textContent;
+            
+            // 模拟家属与老人的绑定关系
+            const familyRelation = '子女';
+            const familyName = '张小明';
+            const contactPhone = '138****5678';
+            const emergencyContact = '李医生 (139****1234)';
+            
+            // 构建模态框内容
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-3xl w-full mx-4">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-medium">预警详情</h3>
+                        <button id="closeModal" class="text-gray-500 hover:text-gray-700">
+                            <i class="ri-close-line text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- 家属与老人关系信息 -->
+                    <div class="bg-primary/5 p-4 rounded-lg mb-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-medium">家属信息</h4>
+                                <p class="text-sm text-gray-600">${familyRelation}：${familyName}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm text-gray-600">联系电话：${contactPhone}</p>
+                                <p class="text-sm text-gray-600">紧急联系人：${emergencyContact}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <!-- 预警基本信息 -->
+                        <div class="flex items-center space-x-6">
+                            <div class="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                                <i class="ri-alert-line text-primary text-3xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-xl font-medium">${title}</h4>
+                                <p class="text-gray-500 mt-1">${name}</p>
+                                <div class="flex items-center mt-3 space-x-3">
+                                    <span class="px-4 py-1 bg-primary/10 text-primary text-xs rounded-full">${level}</span>
+                                    <span class="px-4 py-1 ${status.includes('已处理') ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'} text-xs rounded-full">${status}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 详细数据 -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p class="text-sm text-gray-500 mb-1">预警时间</p>
+                                <p class="font-medium">${time}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p class="text-sm text-gray-500 mb-1">测量值</p>
+                                <p class="font-medium ${level.includes('紧急') ? 'text-danger' : level.includes('中等') ? 'text-warning' : 'text-success'}">${value}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p class="text-sm text-gray-500 mb-1">正常范围</p>
+                                <p class="font-medium">${range}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p class="text-sm text-gray-500 mb-1">预警类型</p>
+                                <p class="font-medium">${title}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 预警描述 -->
+                        <div>
+                            <h5 class="font-medium mb-2">预警描述</h5>
+                            <p class="text-gray-600 bg-gray-50 p-4 rounded-lg">${description}</p>
+                        </div>
+                        
+                        <!-- 健康建议 -->
+                        <div>
+                            <h5 class="font-medium mb-3">建议措施</h5>
+                            <ul class="space-y-3">
+                                <li class="flex items-start space-x-3">
+                                    <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <i class="ri-phone-line text-primary text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium">立即联系老人确认情况</p>
+                                        <p class="text-sm text-gray-600 mt-1">通过电话或视频通话确认老人当前状态</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start space-x-3">
+                                    <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <i class="ri-hospital-line text-primary text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium">如有必要，安排就医</p>
+                                        <p class="text-sm text-gray-600 mt-1">根据预警严重程度，决定是否需要就医</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start space-x-3">
+                                    <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <i class="ri-notebook-line text-primary text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium">记录预警情况和处理措施</p>
+                                        <p class="text-sm text-gray-600 mt-1">保存处理记录，便于后续跟踪</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start space-x-3">
+                                    <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <i class="ri-heart-pulse-line text-primary text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium">持续监测老人健康状况</p>
+                                        <p class="text-sm text-gray-600 mt-1">定期查看老人健康数据，确保状态稳定</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <!-- 历史数据趋势 -->
+                        <div>
+                            <h5 class="font-medium mb-3">近期健康趋势</h5>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm text-gray-600">过去7天数据</span>
+                                    <button class="text-sm text-primary hover:underline">查看完整趋势</button>
+                                </div>
+                                <div class="h-32 bg-white rounded-lg border flex items-end justify-around p-2">
+                                    ${Array.from({length: 7}, (_, i) => {
+                                        const value = Math.floor(Math.random() * 30) + 90;
+                                        return `<div class="flex flex-col items-center">
+                                            <div class="w-8 bg-primary rounded-t-md" style="height: ${(value - 80) * 3}px"></div>
+                                            <span class="text-xs text-gray-500 mt-1">${i+1}日</span>
+                                        </div>`;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 操作按钮 -->
+                    <div class="mt-8 flex flex-wrap gap-3">
+                        <button id="contactElderlyBtn" class="px-6 py-3 bg-primary text-white rounded-button hover:bg-primary/90 transition-colors flex items-center">
+                            <i class="ri-phone-line mr-2"></i>联系老人
+                        </button>
+                        <button id="contactEmergencyBtn" class="px-6 py-3 bg-warning text-white rounded-button hover:bg-warning/90 transition-colors flex items-center">
+                            <i class="ri-alert-line mr-2"></i>联系紧急联系人
+                        </button>
+                        <button id="markAsHandledBtn" class="px-6 py-3 bg-success text-white rounded-button hover:bg-success/90 transition-colors flex items-center">
+                            <i class="ri-check-line mr-2"></i>标记为已处理
+                        </button>
+                        <button id="closeModalBtn" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-button hover:bg-gray-300 transition-colors flex items-center">
+                            <i class="ri-close-line mr-2"></i>关闭
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // 添加模态框到页面
+            document.body.appendChild(modal);
+            
+            // 关闭模态框
+            document.getElementById('closeModal').addEventListener('click', function() {
+                modal.remove();
+            });
+            
+            document.getElementById('closeModalBtn').addEventListener('click', function() {
+                modal.remove();
+            });
+            
+            // 联系老人
+            document.getElementById('contactElderlyBtn').addEventListener('click', function() {
+                showNotification('正在拨打老人电话...');
+                setTimeout(() => {
+                    showNotification('电话已接通，请与老人确认情况');
+                }, 1500);
+            });
+            
+            // 联系紧急联系人
+            document.getElementById('contactEmergencyBtn').addEventListener('click', function() {
+                showNotification('正在拨打紧急联系人电话...');
+                setTimeout(() => {
+                    showNotification('电话已接通，请说明老人情况');
+                }, 1500);
+            });
+            
+            // 标记为已处理
+            document.getElementById('markAsHandledBtn').addEventListener('click', function() {
+                const statusElement = card.querySelector('.font-medium.text-warning');
+                if (statusElement) {
+                    statusElement.textContent = '已处理';
+                    statusElement.className = 'font-medium text-success';
+                    card.classList.remove('border-danger/20', 'border-warning/20');
+                    card.classList.add('border-success/20');
+                }
+                modal.remove();
+                showNotification('预警已标记为已处理');
+            });
+            
+            // 点击模态框外部关闭
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
+        // 显示通知
+        function showNotification(message) {
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-20 right-4 bg-primary text-white px-4 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50';
+            notification.textContent = message;
+            
+            // 添加到页面
+            document.body.appendChild(notification);
+            
+            // 显示通知
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // 3秒后隐藏通知
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // 添加预警数量提示
+        const header = document.querySelector('header');
+        const notificationBtn = document.createElement('button');
+        notificationBtn.className = 'w-10 h-10 flex items-center justify-center relative cursor-pointer';
+        notificationBtn.innerHTML = `
+            <i class="ri-notification-3-line text-xl text-gray-600"></i>
+            <span class="absolute -top-1 -right-1 w-5 h-5 bg-danger text-white text-xs rounded-full flex items-center justify-center">4</span>
+        `;
+        
+        const headerRight = header.querySelector('.flex.items-center.space-x-6');
+        if (headerRight) {
+            headerRight.appendChild(notificationBtn);
+            
+            // 通知按钮点击事件
+            notificationBtn.addEventListener('click', function() {
+                showNotification('您有4条未处理的预警信息');
+            });
+        }
+    });
+</script>
+</body>
+</html>

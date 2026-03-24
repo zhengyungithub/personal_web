@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康档案管理 - 乐享晚年生活</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7AA968',
+                        secondary: '#F4A460',
+                        error: '#ef4444'
+                    },
+                    borderRadius: {
+                        'none': '0px',
+                        'sm': '4px',
+                        DEFAULT: '8px',
+                        'md': '12px',
+                        'lg': '16px',
+                        'xl': '20px',
+                        '2xl': '24px',
+                        '3xl': '32px',
+                        'full': '9999px',
+                        'button': '8px'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :where([class^="ri-"])::before {
+            content: "\f3c2";
+        }
+
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+
+        .input-error {
+            border-color: #ef4444 !important;
+        }
+
+        /* 头像下拉菜单样式 */
+        .avatar-dropdown {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+            width: 160px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 100;
+            display: none;
+        }
+        .avatar-dropdown.show {
+            display: block;
+        }
+        .avatar-dropdown-item {
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .avatar-dropdown-item:hover {
+            background-color: #f5f5f5;
+        }
+        .avatar-dropdown-item i {
+            margin-right: 8px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* 文件上传样式 */
+        .file-upload-container {
+            border: 2px dashed #d1d5db;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .file-upload-container:hover {
+            border-color: #7AA968;
+            background-color: rgba(122, 169, 104, 0.05);
+        }
+        .file-upload-container.active {
+            border-color: #7AA968;
+            background-color: rgba(122, 169, 104, 0.1);
+        }
+        .file-upload-icon {
+            font-size: 2.5rem;
+            color: #7AA968;
+            margin-bottom: 1rem;
+        }
+
+        /* 语音录入适老化样式 */
+        .voice-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .voice-modal.active {
+            display: flex;
+        }
+        .voice-modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .voice-mic-container {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .voice-mic-container:hover {
+            transform: scale(1.05);
+        }
+        .voice-mic-container.recording {
+            background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+            animation: pulse-ring 1.5s ease-out infinite;
+        }
+        @keyframes pulse-ring {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 30px rgba(239, 68, 68, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+        .voice-mic-icon {
+            font-size: 48px;
+            color: white;
+        }
+        .voice-status-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1F2937;
+            margin-bottom: 15px;
+        }
+        .voice-hint-text {
+            font-size: 18px;
+            color: #6B7280;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .voice-example-box {
+            background: #F3F4F6;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .voice-example-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #374151;
+            margin-bottom: 10px;
+        }
+        .voice-example-text {
+            font-size: 16px;
+            color: #4B5563;
+            line-height: 1.8;
+        }
+        .voice-wave-container {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            height: 60px;
+            margin: 20px 0;
+            gap: 4px;
+        }
+        .voice-wave-container.active {
+            display: flex;
+        }
+        .voice-wave-bar {
+            width: 6px;
+            background: linear-gradient(to top, #3B82F6, #60A5FA);
+            border-radius: 3px;
+            animation: wave 1s ease-in-out infinite;
+        }
+        .voice-wave-bar:nth-child(1) { animation-delay: 0s; height: 20%; }
+        .voice-wave-bar:nth-child(2) { animation-delay: 0.1s; height: 40%; }
+        .voice-wave-bar:nth-child(3) { animation-delay: 0.2s; height: 60%; }
+        .voice-wave-bar:nth-child(4) { animation-delay: 0.3s; height: 80%; }
+        .voice-wave-bar:nth-child(5) { animation-delay: 0.4s; height: 100%; }
+        .voice-wave-bar:nth-child(6) { animation-delay: 0.5s; height: 80%; }
+        .voice-wave-bar:nth-child(7) { animation-delay: 0.6s; height: 60%; }
+        .voice-wave-bar:nth-child(8) { animation-delay: 0.7s; height: 40%; }
+        .voice-wave-bar:nth-child(9) { animation-delay: 0.8s; height: 20%; }
+        @keyframes wave {
+            0%, 100% { transform: scaleY(0.5); }
+            50% { transform: scaleY(1); }
+        }
+        .voice-close-btn {
+            margin-top: 20px;
+            padding: 12px 40px;
+            font-size: 18px;
+            border-radius: 30px;
+            border: 2px solid #D1D5DB;
+            background: white;
+            color: #4B5563;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .voice-close-btn:hover {
+            background: #F3F4F6;
+            border-color: #9CA3AF;
+        }
+        .voice-result-container {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #ECFDF5;
+            border-radius: 12px;
+            border: 2px solid #10B981;
+        }
+        .voice-result-container.active {
+            display: block;
+        }
+        .voice-result-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #059669;
+            margin-bottom: 10px;
+        }
+        .voice-result-text {
+            font-size: 16px;
+            color: #374151;
+            line-height: 1.6;
+        }
+        .voice-confirm-btns {
+            display: none;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .voice-confirm-btns.active {
+            display: flex;
+        }
+        .voice-confirm-btn {
+            padding: 12px 30px;
+            font-size: 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+        .voice-confirm-yes {
+            background: #10B981;
+            color: white;
+        }
+        .voice-confirm-yes:hover {
+            background: #059669;
+        }
+        .voice-confirm-no {
+            background: #F3F4F6;
+            color: #4B5563;
+            border: 2px solid #D1D5DB;
+        }
+        .voice-confirm-no:hover {
+            background: #E5E7EB;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+<header class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
+    <nav class="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-8">
+            <a href="/" class="text-2xl font-['Pacifico'] text-primary">乐龄生活</a>
+            <div class="hidden lg:flex space-x-6">
+                <a href="/" class="nav-link text-gray-600 hover:text-primary transition-colors">首页</a>
+                <div class="dropdown relative">
+                    <a href="日常购物.html" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">生活服务</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="/日常购物" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">日常购物</a>
+                        <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">家政服务</a>
+                        <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">维修服务</a>
+                    </div>
+                </div>
+                <div class="dropdown relative">
+                    <a href="#" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">健康管理</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="/健康数据管理" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">健康数据管理</a>
+                        <a href="/健康资讯" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">健康资讯</a>
+                    </div>
+                </div>
+                <div class="dropdown relative">
+                    <a href="#" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">社交娱乐</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="社区交流.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">社区交流</a>
+                        <a href="兴趣小组.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">兴趣小组</a>
+                        <a href="文化娱乐.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">文化娱乐</a>
+                    </div>
+                </div>
+                <a href="防诈骗提醒.html" class="nav-link text-gray-600 hover:text-primary transition-colors">防诈骗提醒</a>
+                <div class="dropdown relative">
+                    <a href="#" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">信息管理</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="通知公告.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">通知公告</a>
+                        <a href="服务评价与反馈.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">服务评价与反馈</a>
+                        <a href="费用管理.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">费用管理</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-6">
+            <div class="relative">
+                <input type="search" placeholder="搜索商品" class="search-input w-64 h-10 pl-10 pr-4 rounded-full border border-gray-200 focus:outline-none focus:border-primary text-sm">
+                <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            </div>
+            <button class="w-10 h-10 flex items-center justify-center relative cursor-pointer" id="cartBtn">
+                <i class="ri-shopping-cart-line text-xl text-gray-600"></i>
+                <span class="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-xs rounded-full flex items-center justify-center">2</span>
+            </button>
+            <div class="relative">
+                <button id="avatarBtn" class="w-10 h-10 flex items-center justify-center cursor-pointer">
+                    <i class="ri-user-line text-xl text-gray-600"></i>
+                </button>
+                <!-- 头像下拉菜单 -->
+                <div id="avatarDropdown" class="avatar-dropdown">
+                    <div class="avatar-dropdown-item" onclick="showProfile()">
+                        <i class="ri-user-line"></i>
+                        <span>个人信息</span>
+                    </div>
+                    <div class="avatar-dropdown-item" onclick="logout()">
+                        <i class="ri-logout-box-r-line"></i>
+                        <span>退出登录</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </nav>
+    <style>
+        .nav-link {
+            padding: 10px 16px;
+            transition: color 0.3s ease, background-color 0.3s ease;
+            font-size: 16px;
+            position: relative;
+            color: #333;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-link:hover {
+            color: #7AA968;
+            background-color: rgba(122, 169, 104, 0.1);
+            border-radius: 8px;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #ffffff;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            z-index: 100;
+            padding: 8px 0;
+            margin-top: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .dropdown-content a {
+            color: #333;
+            padding: 10px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+            color: #7AA968;
+        }
+    </style>
+</header>
+
+<main class="pt-20">
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex space-x-8">
+            <div class="w-64 bg-white rounded-lg shadow-sm p-6 h-fit">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">健康数据管理</h3>
+                <div class="space-y-2">
+                    <a href="#" class="w-full flex items-center justify-between px-4 py-2 text-primary bg-primary/10 rounded-lg">
+                        <span>健康数据录入</span>
+                        <i class="ri-arrow-right-s-line"></i>
+                    </a>
+                    <a href="健康数据管理.html" class="w-full flex items-center justify-between px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg">
+                        <span>健康数据管理</span>
+                        <i class="ri-arrow-right-s-line"></i>
+                    </a>
+                    <a href="健康趋势分析.html" class="w-full flex items-center justify-between px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg">
+                        <span>健康趋势分析</span>
+                        <i class="ri-arrow-right-s-line"></i>
+                    </a>
+                    <a href="风险健康评估.html" class="w-full flex items-center justify-between px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg">
+                        <span>风险健康评估</span>
+                        <i class="ri-arrow-right-s-line"></i>
+                    </a>
+                    <a href="在线咨询.html" class="w-full flex items-center justify-between px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg">
+                        <span>在线咨询</span>
+                        <i class="ri-arrow-right-s-line"></i>
+                    </a>
+                    <a href="健康资讯推送.html" class="w-full flex items-center justify-between px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg">
+                        <span>健康资讯推送</span>
+                        <i class="ri-arrow-right-s-line"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="flex-1">
+                <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">健康数据录入</h2>
+                    <form id="healthDataForm" class="space-y-6">
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">身高 (cm)</label>
+                                <input type="number" step="0.01" class="w-full h-10 px-3 border border-gray-200 rounded-lg focus:outline-none focus:border-primary" placeholder="请输入身高" name="height" oninput="calculateBMI()">
+                                <div class="error-message">请输入有效的数字</div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">体重 (kg)</label>
+                                <input type="number" step="0.01" class="w-full h-10 px-3 border border-gray-200 rounded-lg focus:outline-none focus:border-primary" placeholder="请输入体重" name="weight" oninput="calculateBMI()">
+                                <div class="error-message">请输入有效的数字</div>
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">BMI 指数</label>
+                                <div class="flex items-center">
+                                    <input type="number" step="0.01" class="w-full h-10 px-3 border border-gray-200 rounded-lg focus:outline-none focus:border-primary" placeholder="自动计算" name="bmi" id="bmi" readonly>
+                                    <div class="ml-4 px-3 py-2 rounded-lg text-sm font-medium" id="bmiStatus">
+                                        请输入身高和体重
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">血压 (mmHg)</label>
+                                <div class="flex space-x-2">
+                                    <div class="w-1/2">
+                                        <input type="number" step="0.01" class="w-full h-10 px-3 border border-gray-200 rounded-lg focus:outline-none focus:border-primary" placeholder="收缩压" name="systolic_blood_pressure" oninput="checkBloodPressure()">
+                                        <div class="error-message">请输入有效的数字</div>
+                                        <div class="text-xs text-gray-500 mt-1">正常范围: 90-140</div>
+                                    </div>
+                                    <div class="w-1/2">
+                                        <input type="number" step="0.01" class="w-full h-10 px-3 border border-gray-200 rounded-lg focus:outline-none focus:border-primary" placeholder="舒张压" name="diastolic_blood_pressure" oninput="checkBloodPressure()">
+                                        <div class="error-message">请输入有效的数字</div>
+                                        <div class="text-xs text-gray-500 mt-1">正常范围: 60-90</div>
+                                    </div>
+                                </div>
+                                <div class="text-sm font-medium mt-1" id="bloodPressureStatus"></div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">血糖 (mmol/L)</label>
+                                <input type="number" step="0.01" class="w-full h-10 px-3 border border-gray-200 rounded-lg focus:outline-none focus:border-primary" placeholder="请输入血糖值" name="blood_sugar" oninput="checkBloodSugar()">
+                                <div class="error-message">请输入有效的数字</div>
+                                <div class="text-xs text-gray-500 mt-1">正常范围: 3.9-6.1</div>
+                                <div class="text-sm font-medium mt-1" id="bloodSugarStatus"></div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">心率 (次/分)</label>
+                                <input type="number" step="0.01" class="w-full h-10 px-3 border border-gray-200 rounded-lg focus:outline-none focus:border-primary" placeholder="请输入心率" name="heart_rate" oninput="checkHeartRate()">
+                                <div class="error-message">请输入有效的数字</div>
+                                <div class="text-xs text-gray-500 mt-1">正常范围: 60-100</div>
+                                <div class="text-sm font-medium mt-1" id="heartRateStatus"></div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">体温 (℃)</label>
+                                <input type="number" step="0.01" class="w-full h-10 px-3 border border-gray-200 rounded-lg focus:outline-none focus:border-primary" placeholder="请输入体温" name="body_temperature" oninput="checkTemperature()">
+                                <div class="error-message">请输入有效的数字</div>
+                                <div class="text-xs text-gray-500 mt-1">正常范围: 36.1-37.2</div>
+                                <div class="text-sm font-medium mt-1" id="temperatureStatus"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">备注说明</label>
+                            <textarea class="w-full h-24 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-primary" placeholder="请填写其他需要说明的情况" name="note"></textarea>
+                        </div>
+                        <div class="flex justify-end space-x-4">
+                            <button type="button" id="voiceInputBtn"
+                                    class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-button !rounded-button whitespace-nowrap cursor-pointer flex items-center">
+                                <i class="ri-mic-line mr-2"></i>语音录入
+                            </button>
+                            <button type="button" id="importDataBtn"
+                                    class="px-6 py-2 bg-secondary hover:bg-secondary/90 text-white rounded-button !rounded-button whitespace-nowrap cursor-pointer">
+                                导入数据
+                            </button>
+                            <button type="submit"
+                                    class="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-button !rounded-button whitespace-nowrap cursor-pointer">
+                                保存数据
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- 语音录入适老化模态框 -->
+<div id="voiceModal" class="voice-modal">
+    <div class="voice-modal-content">
+        <div class="voice-mic-container" id="voiceMicContainer">
+            <i class="ri-mic-line voice-mic-icon" id="voiceMicIcon"></i>
+        </div>
+        
+        <div class="voice-status-text" id="voiceStatusText">点击麦克风开始录音</div>
+        
+        <div class="voice-wave-container" id="voiceWaveContainer">
+            <div class="voice-wave-bar"></div>
+            <div class="voice-wave-bar"></div>
+            <div class="voice-wave-bar"></div>
+            <div class="voice-wave-bar"></div>
+            <div class="voice-wave-bar"></div>
+            <div class="voice-wave-bar"></div>
+            <div class="voice-wave-bar"></div>
+            <div class="voice-wave-bar"></div>
+            <div class="voice-wave-bar"></div>
+        </div>
+        
+        <div class="voice-hint-text" id="voiceHintText">
+            请清晰地说出您的健康数据
+        </div>
+        
+        <div class="voice-example-box" id="voiceExampleBox">
+            <div class="voice-example-title">💡 您可以说：</div>
+            <div class="voice-example-text">
+                "身高170厘米，体重65公斤，血压120/80，血糖5.6，心率75，体温36.5"
+            </div>
+        </div>
+        
+        <div class="voice-result-container" id="voiceResultContainer">
+            <div class="voice-result-title">✓ 识别成功</div>
+            <div class="voice-result-text" id="voiceResultText"></div>
+        </div>
+        
+        <div class="voice-confirm-btns" id="voiceConfirmBtns">
+            <button class="voice-confirm-btn voice-confirm-yes" id="voiceConfirmYes">确认填入</button>
+            <button class="voice-confirm-btn voice-confirm-no" id="voiceConfirmNo">重新录入</button>
+        </div>
+        
+        <button class="voice-close-btn" id="voiceCloseBtn">关闭</button>
+    </div>
+</div>
+
+<!-- 成功保存模态框 -->
+<div id="successModal" class="modal">
+    <div class="bg-white rounded-lg w-[400px] mx-auto my-auto p-6 text-center">
+        <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="ri-check-line text-4xl text-primary"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">保存成功</h3>
+        <p class="text-gray-600 mb-6">您的健康数据已成功保存</p>
+        <button id="closeModalBtn" class="w-full bg-primary hover:bg-primary/90 text-white py-2 rounded-button !rounded-button whitespace-nowrap cursor-pointer">我知道了</button>
+    </div>
+</div>
+
+<!-- 修改导入数据模态框部分 -->
+<div id="importModal" class="modal">
+    <div class="bg-white rounded-lg w-[500px] mx-auto my-auto p-6">
+        <h3 class="text-xl font-semibold text-gray-900 mb-4">导入健康数据</h3>
+
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">选择文件</label>
+            <div id="fileUploadContainer" class="file-upload-container">
+                <div id="fileUploadContent">
+                    <i class="ri-upload-cloud-2-line file-upload-icon"></i>
+                    <p class="text-gray-600 mb-2">点击或拖拽文件到此处上传</p>
+                    <p class="text-xs text-gray-500">支持任何格式文件</p>
+                </div>
+                <input type="file" id="healthDataFile" class="hidden" accept="*/*">
+                <div id="fileInfo" class="hidden">
+                    <i class="ri-file-text-line file-upload-icon"></i>
+                    <p id="selectedFileName" class="text-gray-600 mb-2 font-medium"></p>
+                    <button id="changeFileBtn" class="text-primary text-sm hover:underline">更改文件</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">数据格式说明</label>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <p class="text-sm text-gray-600 mb-2">您可以上传任何格式的文件，但请确保文件内容包含以下健康数据：</p>
+                <ul class="text-xs text-gray-600 list-disc pl-5">
+                    <li>身高 (cm)</li>
+                    <li>体重 (kg)</li>
+                    <li>血压 (mmHg)</li>
+                    <li>血糖 (mmol/L)</li>
+                    <li>心率 (次/分)</li>
+                    <li>体温 (℃)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="flex justify-end space-x-3">
+            <button id="cancelImportBtn" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                取消
+            </button>
+            <button id="confirmImportBtn" class="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-button disabled:opacity-50" disabled>
+                导入数据
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 导入进度模态框 -->
+<div id="progressModal" class="modal">
+    <div class="bg-white rounded-lg w-[500px] mx-auto my-auto p-6">
+        <h3 class="text-xl font-semibold text-gray-900 mb-4">正在导入数据</h3>
+
+        <div class="mb-4">
+            <div class="flex justify-between mb-1">
+                <span id="progressFileName" class="text-sm font-medium text-gray-700 truncate max-w-[80%]"></span>
+                <span id="progressPercent" class="text-sm font-medium text-gray-700">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div id="progressBar" class="bg-primary h-2.5 rounded-full" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div id="importStatus" class="text-sm text-gray-600 mb-6">
+            正在处理文件，请稍候...
+        </div>
+
+        <div class="flex justify-end">
+            <button id="cancelImportProcessBtn" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                取消导入
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 个人信息和退出登录功能
+    function showProfile() {
+        alert('个人信息功能');
+        // 这里可以替换为实际跳转到个人信息页面的代码
+        // window.location.href = '/profile';
+    }
+
+    function logout() {
+        if (confirm('确定要退出登录吗？')) {
+            // 清除本地存储的 token 和 userId
+            localStorage.removeItem('token');
+            localStorage.removeItem('userId');
+            // 跳转到登录页面
+            window.location.href = "/";
+        }
+    }
+
+    // BMI计算功能
+    function calculateBMI() {
+        const height = parseFloat(document.querySelector('input[name="height"]').value);
+        const weight = parseFloat(document.querySelector('input[name="weight"]').value);
+        const bmiInput = document.getElementById('bmi');
+        const bmiStatus = document.getElementById('bmiStatus');
+
+        if (height > 0 && weight > 0) {
+            const heightInMeters = height / 100;
+            const bmi = weight / (heightInMeters * heightInMeters);
+            bmiInput.value = bmi.toFixed(2);
+
+            // BMI状态判断
+            if (bmi < 18.5) {
+                bmiStatus.textContent = '体重过轻';
+                bmiStatus.className = 'ml-4 px-3 py-2 rounded-lg text-sm font-medium bg-blue-100 text-blue-800';
+            } else if (bmi < 24) {
+                bmiStatus.textContent = '体重正常';
+                bmiStatus.className = 'ml-4 px-3 py-2 rounded-lg text-sm font-medium bg-green-100 text-green-800';
+            } else if (bmi < 28) {
+                bmiStatus.textContent = '超重';
+                bmiStatus.className = 'ml-4 px-3 py-2 rounded-lg text-sm font-medium bg-yellow-100 text-yellow-800';
+            } else {
+                bmiStatus.textContent = '肥胖';
+                bmiStatus.className = 'ml-4 px-3 py-2 rounded-lg text-sm font-medium bg-red-100 text-red-800';
+            }
+        } else {
+            bmiInput.value = '';
+            bmiStatus.textContent = '请输入身高和体重';
+            bmiStatus.className = 'ml-4 px-3 py-2 rounded-lg text-sm font-medium text-gray-500';
+        }
+    }
+
+    // 血压检查功能
+    function checkBloodPressure() {
+        const systolic = parseFloat(document.querySelector('input[name="systolic_blood_pressure"]').value);
+        const diastolic = parseFloat(document.querySelector('input[name="diastolic_blood_pressure"]').value);
+        const status = document.getElementById('bloodPressureStatus');
+
+        if (!isNaN(systolic) && !isNaN(diastolic)) {
+            if (systolic < 90 || diastolic < 60) {
+                status.textContent = '血压偏低';
+                status.className = 'text-sm font-medium mt-1 text-blue-600';
+            } else if (systolic < 140 && diastolic < 90) {
+                status.textContent = '血压正常';
+                status.className = 'text-sm font-medium mt-1 text-green-600';
+            } else if (systolic < 160 && diastolic < 100) {
+                status.textContent = '血压偏高';
+                status.className = 'text-sm font-medium mt-1 text-yellow-600';
+            } else {
+                status.textContent = '血压过高';
+                status.className = 'text-sm font-medium mt-1 text-red-600';
+            }
+        } else {
+            status.textContent = '';
+        }
+    }
+
+    // 血糖检查功能
+    function checkBloodSugar() {
+        const bloodSugar = parseFloat(document.querySelector('input[name="blood_sugar"]').value);
+        const status = document.getElementById('bloodSugarStatus');
+
+        if (!isNaN(bloodSugar)) {
+            if (bloodSugar < 3.9) {
+                status.textContent = '血糖偏低';
+                status.className = 'text-sm font-medium mt-1 text-blue-600';
+            } else if (bloodSugar <= 6.1) {
+                status.textContent = '血糖正常';
+                status.className = 'text-sm font-medium mt-1 text-green-600';
+            } else if (bloodSugar <= 7.0) {
+                status.textContent = '血糖偏高';
+                status.className = 'text-sm font-medium mt-1 text-yellow-600';
+            } else {
+                status.textContent = '血糖过高';
+                status.className = 'text-sm font-medium mt-1 text-red-600';
+            }
+        } else {
+            status.textContent = '';
+        }
+    }
+
+    // 心率检查功能
+    function checkHeartRate() {
+        const heartRate = parseFloat(document.querySelector('input[name="heart_rate"]').value);
+        const status = document.getElementById('heartRateStatus');
+
+        if (!isNaN(heartRate)) {
+            if (heartRate < 60) {
+                status.textContent = '心率偏低';
+                status.className = 'text-sm font-medium mt-1 text-blue-600';
+            } else if (heartRate <= 100) {
+                status.textContent = '心率正常';
+                status.className = 'text-sm font-medium mt-1 text-green-600';
+            } else {
+                status.textContent = '心率偏高';
+                status.className = 'text-sm font-medium mt-1 text-red-600';
+            }
+        } else {
+            status.textContent = '';
+        }
+    }
+
+    // 体温检查功能
+    function checkTemperature() {
+        const temperature = parseFloat(document.querySelector('input[name="body_temperature"]').value);
+        const status = document.getElementById('temperatureStatus');
+
+        if (!isNaN(temperature)) {
+            if (temperature < 36.1) {
+                status.textContent = '体温偏低';
+                status.className = 'text-sm font-medium mt-1 text-blue-600';
+            } else if (temperature <= 37.2) {
+                status.textContent = '体温正常';
+                status.className = 'text-sm font-medium mt-1 text-green-600';
+            } else if (temperature <= 38) {
+                status.textContent = '轻度发热';
+                status.className = 'text-sm font-medium mt-1 text-yellow-600';
+            } else {
+                status.textContent = '发热';
+                status.className = 'text-sm font-medium mt-1 text-red-600';
+            }
+        } else {
+            status.textContent = '';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // 头像下拉菜单功能
+        const avatarBtn = document.getElementById('avatarBtn');
+        const avatarDropdown = document.getElementById('avatarDropdown');
+
+        if (avatarBtn && avatarDropdown) {
+            avatarBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                avatarDropdown.classList.toggle('show');
+            });
+        }
+
+        // 点击页面其他地方时隐藏下拉菜单
+        document.addEventListener('click', function() {
+            if (avatarDropdown) avatarDropdown.classList.remove('show');
+        });
+
+        // 关闭成功模态框的函数
+        function closeSuccessModal() {
+            document.getElementById('successModal').classList.remove('active');
+        }
+
+        // 表单提交处理
+        const healthDataForm = document.getElementById('healthDataForm');
+        if (healthDataForm) {
+            healthDataForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                // 验证输入
+                const inputs = this.querySelectorAll('input[type="number"]');
+                let isValid = true;
+
+                inputs.forEach(input => {
+                    const errorElement = input.nextElementSibling;
+                    if (input.value && isNaN(parseFloat(input.value))) {
+                        input.classList.add('input-error');
+                        errorElement.style.display = 'block';
+                        isValid = false;
+                    } else {
+                        input.classList.remove('input-error');
+                        errorElement.style.display = 'none';
+                    }
+                });
+
+                if (!isValid) {
+                    showToast('请输入有效的数字', 'error');
+                    return;
+                }
+
+                // 准备表单数据 - 使用与实体类一致的字段名
+                const formData = {
+                    userId: parseInt(localStorage.getItem('userId')), // 从本地存储获取用户ID
+                    height: this.elements.height.value ? parseFloat(this.elements.height.value) : null,
+                    weight: this.elements.weight.value ? parseFloat(this.elements.weight.value) : null,
+                    systolicBloodPressure: this.elements.systolic_blood_pressure.value
+                        ? parseFloat(this.elements.systolic_blood_pressure.value) : null,
+                    diastolicBloodPressure: this.elements.diastolic_blood_pressure.value
+                        ? parseFloat(this.elements.diastolic_blood_pressure.value) : null,
+                    bloodSugar: this.elements.blood_sugar.value
+                        ? parseFloat(this.elements.blood_sugar.value) : null,
+                    heartRate: this.elements.heart_rate.value
+                        ? parseFloat(this.elements.heart_rate.value) : null,
+                    bodyTemperature: this.elements.body_temperature.value
+                        ? parseFloat(this.elements.body_temperature.value) : null,
+                    note: this.elements.note.value || "",
+                    recordDate: new Date().toISOString()
+                };
+
+                try {
+                    // 发送数据到服务器
+                    const response = await axios.post('/健康数据管理', formData, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${currentToken}`
+                        }
+                    });
+
+                    if (response.data.success) {
+                        showToast('数据保存成功','success');
+                        this.reset();
+                        document.getElementById('successModal').classList.add('active');
+                        updateChartWithNewData(response.data.data);
+                    } else {
+                        showToast(response.data.message || '数据保存失败', 'error');
+                    }
+                } catch (error) {
+                    if (error.response) {
+                        switch (error.response.status) {
+                            case 400:
+                                showToast('请求参数错误: ' + (error.response.data.message || '请检查输入'), 'error');
+                                break;
+                            case 401:
+                                showToast('权限不足，请重新登录', 'error');
+                                break;
+                            case 500:
+                                showToast('服务器内部错误: ' + (error.response.data.message || '请稍后再试'), 'error');
+                                break;
+                            default:
+                                showToast('请求失败: ' + error.response.status, 'error');
+                        }
+                    } else if (error.request) {
+                        showToast('网络请求失败，请检查网络连接', 'error');
+                    } else {
+                        showToast('发生未知错误: ' + error.message, 'error');
+                    }
+                    console.error('API请求错误:', error);
+                }
+            });
+        }
+
+        // 为关闭按钮添加事件监听
+        document.getElementById('closeModalBtn')?.addEventListener('click', closeSuccessModal);
+
+        // 实时验证输入
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('input', function() {
+                if (this.value && isNaN(parseFloat(this.value))) {
+                    this.classList.add('input-error');
+                    this.nextElementSibling.style.display = 'block';
+                } else {
+                    this.classList.remove('input-error');
+                    this.nextElementSibling.style.display = 'none';
+                }
+            });
+        });
+
+        // 导入数据功能
+        const importModal = document.getElementById('importModal');
+        const progressModal = document.getElementById('progressModal');
+        const importDataBtn = document.getElementById('importDataBtn');
+        const cancelImportBtn = document.getElementById('cancelImportBtn');
+        const fileUploadContainer = document.getElementById('fileUploadContainer');
+        const fileUploadContent = document.getElementById('fileUploadContent');
+        const fileInfo = document.getElementById('fileInfo');
+        const selectedFileName = document.getElementById('selectedFileName');
+        const changeFileBtn = document.getElementById('changeFileBtn');
+        const healthDataFile = document.getElementById('healthDataFile');
+        const confirmImportBtn = document.getElementById('confirmImportBtn');
+        const progressFileName = document.getElementById('progressFileName');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressBar = document.getElementById('progressBar');
+        const importStatus = document.getElementById('importStatus');
+        const cancelImportProcessBtn = document.getElementById('cancelImportProcessBtn');
+
+        // 文件上传容器点击事件
+        if (fileUploadContainer) {
+            fileUploadContainer.addEventListener('click', function() {
+                healthDataFile.click();
+            });
+        }
+
+        // 更改文件按钮
+        if (changeFileBtn) {
+            changeFileBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                healthDataFile.click();
+            });
+        }
+
+        // 拖拽文件相关事件
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight() {
+            fileUploadContainer.classList.add('active');
+        }
+
+        function unhighlight() {
+            fileUploadContainer.classList.remove('active');
+        }
+
+        if (fileUploadContainer) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                fileUploadContainer.addEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                fileUploadContainer.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                fileUploadContainer.addEventListener(eventName, unhighlight, false);
+            });
+
+            // 处理文件拖放
+            fileUploadContainer.addEventListener('drop', handleDrop, false);
+        }
+
+
+        // 在文件上传处理部分添加更详细的错误提示
+        confirmImportBtn.addEventListener('click', async function() {
+            if (!healthDataFile.files.length) return;
+
+            const file = healthDataFile.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('userId', localStorage.getItem('userId'));
+
+            importModal.classList.remove('active');
+            progressModal.classList.add('active');
+
+            try {
+                // 模拟上传进度
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 5;
+                    if (progress >= 95) clearInterval(interval);
+                    updateProgress(progress, '上传中...');
+                }, 200);
+
+                const response = await axios.post('/健康数据管理/upload', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    onUploadProgress: function(progressEvent) {
+                        if (progressEvent.lengthComputable) {
+                            const percentComplete = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                            updateProgress(percentComplete, '上传中...');
+                        }
+                    }
+                });
+
+                clearInterval(interval);
+                updateProgress(100, '导入完成');
+
+                setTimeout(() => {
+                    progressModal.classList.remove('active');
+                    resetImportModal();
+                    showToast(response.data.message || '文件上传成功', 'success');
+
+                    if (response.data.data) {
+                        console.log('导入的数据:', response.data.data);
+                    }
+                }, 1000);
+            } catch (error) {
+                console.error('上传失败:', error);
+                progressModal.classList.remove('active');
+
+                let errorMessage = '文件上传失败';
+                if (error.response) {
+                    // 从后端获取更具体的错误信息
+                    errorMessage = error.response.data.message || errorMessage;
+
+                    // 400错误时显示更友好的提示
+                    if (error.response.status === 400) {
+                        errorMessage = "文件格式不正确: " + (error.response.data.message || "请确保文件内容包含必要的健康数据");
+                    }
+                }
+
+                showToast(errorMessage, 'error');
+            }
+        });
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                handleFiles(files);
+            }
+        }
+
+        // 处理文件选择
+        if (healthDataFile) {
+            healthDataFile.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    handleFiles(this.files);
+                }
+            });
+        }
+
+        // 处理选择的文件
+        function handleFiles(files) {
+            const file = files[0];
+
+            // 显示文件信息
+            selectedFileName.textContent = file.name;
+            fileUploadContent.classList.add('hidden');
+            fileInfo.classList.remove('hidden');
+            confirmImportBtn.disabled = false;
+
+            // 更新进度模态框中的文件名
+            progressFileName.textContent = file.name;
+        }
+
+        // 导入数据按钮点击事件
+        if (importDataBtn) {
+            importDataBtn.addEventListener('click', function() {
+                importModal.classList.add('active');
+            });
+        }
+
+        // 取消导入按钮
+        if (cancelImportBtn) {
+            cancelImportBtn.addEventListener('click', function() {
+                resetImportModal();
+                importModal.classList.remove('active');
+            });
+        }
+
+        // 取消导入过程按钮
+        if (cancelImportProcessBtn) {
+            cancelImportProcessBtn.addEventListener('click', function() {
+                // 这里可以添加取消上传的逻辑
+                resetImportModal();
+                progressModal.classList.remove('active');
+                showToast('导入已取消', 'info');
+            });
+        }
+
+        // 修改确认导入按钮的点击事件处理
+        if (confirmImportBtn) {
+            confirmImportBtn.addEventListener('click', async function() {
+                if (!healthDataFile.files.length) return;
+
+                const file = healthDataFile.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('userId', localStorage.getItem('userId'));
+
+                // 显示进度模态框
+                importModal.classList.remove('active');
+                progressModal.classList.add('active');
+
+                try {
+                    // 模拟上传进度
+                    let progress = 0;
+                    const interval = setInterval(() => {
+                        progress += 5;
+                        if (progress >= 95) clearInterval(interval);
+                        updateProgress(progress, '上传中...');
+                    }, 200);
+
+                    const response = await axios.post('/健康数据管理/upload', formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        onUploadProgress: function(progressEvent) {
+                            if (progressEvent.lengthComputable) {
+                                const percentComplete = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                                updateProgress(percentComplete, '上传中...');
+                            }
+                        }
+                    });
+
+                    clearInterval(interval);
+                    updateProgress(100, '导入完成');
+
+                    setTimeout(() => {
+                        progressModal.classList.remove('active');
+                        resetImportModal();
+
+                        // 显示成功消息和文件保存信息
+                        let successMsg = response.data.message;
+                        if (response.data.filePath) {
+                            successMsg += `<br>文件保存路径: ${response.data.filePath}`;
+                        }
+                        showToast(successMsg, 'success');
+
+                        if (response.data.data) {
+                            console.log('导入的数据:', response.data.data);
+                        }
+                    }, 1000);
+                } catch (error) {
+                    console.error('上传失败:', error);
+                    progressModal.classList.remove('active');
+
+                    let errorMessage = '文件上传失败';
+                    if (error.response) {
+                        errorMessage = error.response.data.message || errorMessage;
+
+                        if (error.response.status === 400) {
+                            errorMessage = "文件格式不正确: " + (error.response.data.message || "请确保文件内容包含必要的健康数据");
+                        }
+                    }
+
+                    showToast(errorMessage, 'error');
+                }
+            });
+        }
+
+// 修改showToast函数以支持HTML内容
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 px-4 py-2 rounded-md text-white ${
+                type === 'error' ? 'bg-error' : 'bg-primary'
+            }`;
+            toast.innerHTML = message; // 使用innerHTML而不是textContent以支持HTML
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        }
+
+        // 更新进度条
+        function updateProgress(percent, status) {
+            progressPercent.textContent = `${Math.min(100, Math.floor(percent))}%`;
+            progressBar.style.width = `${Math.min(100, percent)}%`;
+            importStatus.textContent = status;
+        }
+
+        // 重置导入模态框
+        function resetImportModal() {
+            healthDataFile.value = '';
+            fileUploadContent.classList.remove('hidden');
+            fileInfo.classList.add('hidden');
+            confirmImportBtn.disabled = true;
+            progressBar.style.width = '0%';
+            progressPercent.textContent = '0%';
+            importStatus.textContent = '正在处理文件，请稍候...';
+        }
+
+
+        function updateChartWithNewData(newData) {
+            // 实现图表更新逻辑
+            console.log('更新图表数据:', newData);
+        }
+
+        // 语音识别功能 - 适老化版本
+        const voiceInputBtn = document.getElementById('voiceInputBtn');
+        const voiceModal = document.getElementById('voiceModal');
+        const voiceMicContainer = document.getElementById('voiceMicContainer');
+        const voiceMicIcon = document.getElementById('voiceMicIcon');
+        const voiceStatusText = document.getElementById('voiceStatusText');
+        const voiceHintText = document.getElementById('voiceHintText');
+        const voiceWaveContainer = document.getElementById('voiceWaveContainer');
+        const voiceExampleBox = document.getElementById('voiceExampleBox');
+        const voiceResultContainer = document.getElementById('voiceResultContainer');
+        const voiceResultText = document.getElementById('voiceResultText');
+        const voiceConfirmBtns = document.getElementById('voiceConfirmBtns');
+        const voiceConfirmYes = document.getElementById('voiceConfirmYes');
+        const voiceConfirmNo = document.getElementById('voiceConfirmNo');
+        const voiceCloseBtn = document.getElementById('voiceCloseBtn');
+        
+        let recognition = null;
+        let isRecording = false;
+        let lastRecognizedData = null;
+        let lastRecognizedText = '';
+
+        // 打开语音录入模态框
+        voiceInputBtn.addEventListener('click', function() {
+            voiceModal.classList.add('active');
+            resetVoiceModal();
+        });
+
+        // 关闭语音录入模态框
+        voiceCloseBtn.addEventListener('click', function() {
+            if (isRecording && recognition) {
+                recognition.stop();
+            }
+            voiceModal.classList.remove('active');
+        });
+
+        // 点击模态框背景关闭
+        voiceModal.addEventListener('click', function(e) {
+            if (e.target === voiceModal) {
+                if (isRecording && recognition) {
+                    recognition.stop();
+                }
+                voiceModal.classList.remove('active');
+            }
+        });
+
+        // 重置语音录入模态框状态
+        function resetVoiceModal() {
+            isRecording = false;
+            voiceMicContainer.classList.remove('recording');
+            voiceMicIcon.className = 'ri-mic-line voice-mic-icon';
+            voiceStatusText.textContent = '点击麦克风开始录音';
+            voiceHintText.textContent = '请清晰地说出您的健康数据';
+            voiceWaveContainer.classList.remove('active');
+            voiceExampleBox.style.display = 'block';
+            voiceResultContainer.classList.remove('active');
+            voiceConfirmBtns.classList.remove('active');
+            voiceCloseBtn.style.display = 'inline-block';
+            lastRecognizedData = null;
+            lastRecognizedText = '';
+        }
+
+        // 显示录音中状态
+        function showRecordingState() {
+            voiceMicContainer.classList.add('recording');
+            voiceMicIcon.className = 'ri-mic-fill voice-mic-icon';
+            voiceStatusText.textContent = '正在录音，请说话...';
+            voiceHintText.textContent = '请说出您的健康数据，例如：身高170厘米，体重65公斤';
+            voiceWaveContainer.classList.add('active');
+            voiceExampleBox.style.display = 'none';
+        }
+
+        // 显示识别结果
+        function showRecognitionResult(text, data) {
+            voiceMicContainer.classList.remove('recording');
+            voiceMicIcon.className = 'ri-mic-line voice-mic-icon';
+            voiceWaveContainer.classList.remove('active');
+            voiceStatusText.textContent = '识别完成';
+            voiceHintText.textContent = '请检查识别结果是否正确';
+            voiceExampleBox.style.display = 'none';
+            
+            // 构建识别结果显示文本
+            let resultHtml = `<strong>识别内容：</strong>${text}<br><br>`;
+            resultHtml += '<strong>识别到的数据：</strong><br>';
+            
+            const dataLabels = {
+                height: '身高',
+                weight: '体重',
+                systolic_blood_pressure: '收缩压',
+                diastolic_blood_pressure: '舒张压',
+                blood_sugar: '血糖',
+                heart_rate: '心率',
+                body_temperature: '体温'
+            };
+            
+            let hasValidData = false;
+            for (const [key, value] of Object.entries(data)) {
+                if (value) {
+                    resultHtml += `• ${dataLabels[key]}: ${value}<br>`;
+                    hasValidData = true;
+                }
+            }
+            
+            if (!hasValidData) {
+                resultHtml += '<span style="color: #EF4444;">未识别到有效数据</span>';
+            }
+            
+            voiceResultText.innerHTML = resultHtml;
+            voiceResultContainer.classList.add('active');
+            
+            if (hasValidData) {
+                voiceConfirmBtns.classList.add('active');
+                voiceCloseBtn.style.display = 'none';
+            } else {
+                voiceHintText.textContent = '未能识别到有效数据，请点击麦克风重新录入';
+            }
+        }
+
+        // 检查浏览器是否支持语音识别
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'zh-CN';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = function() {
+                isRecording = true;
+                showRecordingState();
+            };
+
+            recognition.onend = function() {
+                isRecording = false;
+                if (!voiceResultContainer.classList.contains('active')) {
+                    voiceMicContainer.classList.remove('recording');
+                    voiceMicIcon.className = 'ri-mic-line voice-mic-icon';
+                    voiceStatusText.textContent = '点击麦克风开始录音';
+                    voiceWaveContainer.classList.remove('active');
+                    voiceExampleBox.style.display = 'block';
+                }
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                console.log('语音识别结果:', transcript);
+                lastRecognizedText = transcript;
+                lastRecognizedData = parseVoiceInput(transcript);
+                showRecognitionResult(transcript, lastRecognizedData);
+            };
+
+            recognition.onerror = function(event) {
+                console.error('语音识别错误:', event.error);
+                isRecording = false;
+                voiceMicContainer.classList.remove('recording');
+                voiceMicIcon.className = 'ri-mic-line voice-mic-icon';
+                voiceWaveContainer.classList.remove('active');
+                voiceStatusText.textContent = '识别失败';
+                voiceHintText.textContent = '识别出错，请检查麦克风权限后重试';
+                voiceExampleBox.style.display = 'block';
+            };
+
+            // 点击麦克风按钮开始/停止录音
+            voiceMicContainer.addEventListener('click', function() {
+                if (isRecording) {
+                    recognition.stop();
+                } else {
+                    // 如果已经显示结果，先重置
+                    if (voiceResultContainer.classList.contains('active')) {
+                        resetVoiceModal();
+                    }
+                    recognition.start();
+                }
+            });
+        } else {
+            // 浏览器不支持语音识别
+            voiceMicContainer.addEventListener('click', function() {
+                voiceStatusText.textContent = '浏览器不支持';
+                voiceHintText.textContent = '您的浏览器不支持语音识别，请使用Chrome或Edge浏览器';
+            });
+        }
+
+        // 确认填入按钮
+        voiceConfirmYes.addEventListener('click', function() {
+            if (lastRecognizedData) {
+                fillFormWithVoiceData(lastRecognizedData);
+                voiceModal.classList.remove('active');
+                showToast('语音数据已成功填入表单', 'success');
+            }
+        });
+
+        // 重新录入按钮
+        voiceConfirmNo.addEventListener('click', function() {
+            resetVoiceModal();
+        });
+
+        // 解析语音输入
+        function parseVoiceInput(text) {
+            const data = {
+                height: null,
+                weight: null,
+                systolic_blood_pressure: null,
+                diastolic_blood_pressure: null,
+                blood_sugar: null,
+                heart_rate: null,
+                body_temperature: null
+            };
+
+            // 解析身高
+            const heightMatch = text.match(/身高\s*(\d+\.?\d*)\s*(厘米|cm)/i);
+            if (heightMatch) {
+                data.height = heightMatch[1];
+            }
+
+            // 解析体重
+            const weightMatch = text.match(/体重\s*(\d+\.?\d*)\s*(公斤|kg|千克)/i);
+            if (weightMatch) {
+                data.weight = weightMatch[1];
+            }
+
+            // 解析血压
+            const bpMatch = text.match(/血压\s*(\d+)\s*[\/\s]\s*(\d+)/i);
+            if (bpMatch) {
+                data.systolic_blood_pressure = bpMatch[1];
+                data.diastolic_blood_pressure = bpMatch[2];
+            }
+
+            // 解析血糖
+            const sugarMatch = text.match(/血糖\s*(\d+\.?\d*)/i);
+            if (sugarMatch) {
+                data.blood_sugar = sugarMatch[1];
+            }
+
+            // 解析心率
+            const heartRateMatch = text.match(/心率\s*(\d+)/i);
+            if (heartRateMatch) {
+                data.heart_rate = heartRateMatch[1];
+            }
+
+            // 解析体温
+            const tempMatch = text.match(/体温\s*(\d+\.?\d*)/i);
+            if (tempMatch) {
+                data.body_temperature = tempMatch[1];
+            }
+
+            return data;
+        }
+
+        // 将语音数据填入表单
+        function fillFormWithVoiceData(data) {
+            const form = document.getElementById('healthDataForm');
+            
+            if (data.height) {
+                form.querySelector('[name="height"]').value = data.height;
+            }
+            if (data.weight) {
+                form.querySelector('[name="weight"]').value = data.weight;
+            }
+            if (data.systolic_blood_pressure) {
+                form.querySelector('[name="systolic_blood_pressure"]').value = data.systolic_blood_pressure;
+            }
+            if (data.diastolic_blood_pressure) {
+                form.querySelector('[name="diastolic_blood_pressure"]').value = data.diastolic_blood_pressure;
+            }
+            if (data.blood_sugar) {
+                form.querySelector('[name="blood_sugar"]').value = data.blood_sugar;
+            }
+            if (data.heart_rate) {
+                form.querySelector('[name="heart_rate"]').value = data.heart_rate;
+            }
+            if (data.body_temperature) {
+                form.querySelector('[name="body_temperature"]').value = data.body_temperature;
+            }
+        }
+    });
+</script>
+</body>
+</html>

@@ -1119,17 +1119,9 @@ const showWritingModal = ref(false);
 const currentPhotoType = ref('');
 
 const photos = ref([
-  "/照片作品集/3d00b1b51d31cb12e6e24bc44d592e96.jpg",
-  "/照片作品集/7b90c84a5cfb218ef3b9f5f4b11f91a6.jpg",
-  "/照片作品集/8fe93b95e50303fe15c72dfc645d7c7b.jpg",
-  "/照片作品集/75eb88627b06181f818edfe792e1531c.jpg",
-  "/照片作品集/2625bb9029d3fab6a799ffc346a7a785.jpg",
-  "/照片作品集/3214fa85a8fb44b902b4375b35416a6a.jpg",
-  "/照片作品集/46058fb7-a938-4756-96cf-fc509d85f564.png",
-  "/照片作品集/53176c98116dab62123024f0bdbbb04c.jpg",
-  "/照片作品集/660453a6a3326c25915e62a69baf2f44.jpg",
-  "/照片作品集/930014dde0c9b5525620b079890e2454.jpg",
-  "/照片作品集/f8c527ab92c586c7b9af6267e8aa354a.jpg"
+  "/横屏照片集/1.jpg", "/横屏照片集/2.jpg", "/横屏照片集/3.jpg", "/横屏照片集/4.jpg", "/横屏照片集/5.jpg",
+  "/横屏照片集/6.jpg", "/横屏照片集/7.jpg", "/横屏照片集/8.jpg", "/横屏照片集/9.jpg", "/横屏照片集/10.jpg",
+  "/横屏照片集/11.jpg"
 ]);
 
 const landscapePhotos = ref([

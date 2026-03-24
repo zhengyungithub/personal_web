@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日常购物 - 乐龄生活服务平台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7AA968',
+                        secondary: '#F4A460'
+                    },
+                    borderRadius: {
+                        'none': '0px',
+                        'sm': '4px',
+                        DEFAULT: '8px',
+                        'md': '12px',
+                        'lg': '16px',
+                        'xl': '20px',
+                        '2xl': '24px',
+                        '3xl': '32px',
+                        'full': '9999px',
+                        'button': '8px'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :where([class^="ri-"])::before {
+            content: "\f3c2";
+        }
+
+        .search-input::-webkit-search-cancel-button {
+            display: none;
+        }
+
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .category-item.active {
+            background-color: rgba(122, 169, 104, 0.1);
+            color: #7AA968;
+        }
+
+        .category-item:hover {
+            background-color: rgba(122, 169, 104, 0.05);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+<header class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
+    <nav class="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-8">
+            <a href="/" class="text-2xl font-['Pacifico'] text-primary">乐龄生活</a>
+            <div class="hidden lg:flex space-x-6">
+                <a href="/" class="nav-link text-gray-600 hover:text-primary transition-colors">首页</a>
+                <div class="dropdown relative">
+                    <a href="#" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">生活服务</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="/日常购物" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">日常购物</a>
+                        <a href="/家政服务" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">家政服务</a>
+                        <a href="/维修服务" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">维修服务</a>
+                    </div>
+                </div>
+                <a href="健康数据管理.html" class="nav-link text-gray-600 hover:text-primary transition-colors">健康管理</a>
+                <div class="dropdown relative">
+                    <a href="#" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">社交娱乐</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="/社区交流" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">社区交流</a>
+                        <a href="/兴趣小组" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">兴趣小组</a>
+                        <a href="/文化娱乐" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">文化娱乐</a>
+                    </div>
+                </div>
+                <a href="/防诈骗提醒" class="nav-link text-gray-600 hover:text-primary transition-colors">防诈骗提醒</a>
+                <div class="dropdown relative">
+                    <a href="#" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">信息管理</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="/通知公告" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">通知公告</a>
+                        <a href="/服务评价与反馈" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">服务评价与反馈</a>
+                        <a href="/费用管理" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">费用管理</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-6">
+            <div class="relative">
+                <input type="search" placeholder="搜索商品" class="search-input w-64 h-10 pl-10 pr-4 rounded-full border border-gray-200 focus:outline-none focus:border-primary text-sm">
+                <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            </div>
+            <button class="w-10 h-10 flex items-center justify-center relative cursor-pointer" id="cartBtn">
+                <i class="ri-shopping-cart-line text-xl text-gray-600"></i>
+                <span class="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-xs rounded-full flex items-center justify-center">2</span>
+            </button>
+            <button class="w-10 h-10 flex items-center justify-center cursor-pointer">
+                <i class="ri-user-line text-xl text-gray-600"></i>
+            </button>
+        </div>
+    </nav>
+    <style>
+        .nav-link {
+            padding: 10px 16px;
+            transition: color 0.3s ease, background-color 0.3s ease;
+            font-size: 16px;
+            position: relative;
+            color: #333;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-link:hover {
+            color: #7AA968;
+            background-color: rgba(122, 169, 104, 0.1);
+            border-radius: 8px;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #ffffff;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            z-index: 100;
+            padding: 8px 0;
+            margin-top: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .dropdown-content a {
+            color: #333;
+            padding: 10px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+            color: #7AA968;
+        }
+    </style>
+</header>
+
+<main class="pt-16 min-h-screen">
+    <div class="container mx-auto px-4 py-8 flex">
+        <aside class="w-64 flex-shrink-0">
+            <div class="bg-white rounded-lg shadow-sm p-4">
+                <h3 class="text-lg font-semibold mb-4">商品分类</h3>
+                <ul class="space-y-2" id="categoryList">
+                    <li class="category-item active flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer">
+                        <i class="ri-restaurant-line"></i>
+                        <span>食品生鲜</span>
+                    </li>
+                    <li class="category-item flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer">
+                        <i class="ri-medicine-bottle-line"></i>
+                        <span>保健品</span>
+                    </li>
+                    <li class="category-item flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer">
+                        <i class="ri-t-shirt-line"></i>
+                        <span>服饰日用</span>
+                    </li>
+                    <li class="category-item flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer">
+                        <i class="ri-home-smile-line"></i>
+                        <span>家居用品</span>
+                    </li>
+                    <li class="category-item flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer">
+                        <i class="ri-device-line"></i>
+                        <span>智能设备</span>
+                    </li>
+                </ul>
+            </div>
+        </aside>
+
+        <div class="flex-1 ml-8">
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+                <div class="flex items-center space-x-4 mb-6">
+                    <div class="px-1 py-1 bg-gray-100 rounded-full flex">
+                        <button class="px-6 py-2 rounded-full bg-white shadow-sm text-primary">综合排序</button>
+                        <button class="px-6 py-2 rounded-full text-gray-600">销量优先</button>
+                        <button class="px-6 py-2 rounded-full text-gray-600">价格优先</button>
+                    </div>
+                    <div class="flex items-center space-x-2 text-sm text-gray-600">
+                        <span>价格区间：</span>
+                        <input type="number" class="w-20 h-8 px-2 border border-gray-200 rounded text-center" placeholder="最低价">
+                        <span>-</span>
+                        <input type="number" class="w-20 h-8 px-2 border border-gray-200 rounded text-center" placeholder="最高价">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-6" id="productList">
+                    <div class="bg-white rounded-lg border border-gray-100 overflow-hidden group hover:shadow-md transition-shadow">
+                        <div class="relative pt-[75%] overflow-hidden">
+                            <img src="https://public.readdy.ai/ai/img_res/bbecc560c1ae485838d9af98a6c79191.jpg" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="有机蔬果礼盒">
+                            <div class="absolute top-3 right-3 bg-primary/90 text-white text-sm px-3 py-1 rounded-full">热销</div>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="text-lg font-medium mb-2">有机蔬果礼盒</h3>
+                            <p class="text-gray-600 text-sm mb-3">精选新鲜有机蔬果，营养美味</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xl font-bold text-primary">¥199</span>
+                                <button class="add-to-cart bg-primary text-white px-4 py-2 rounded-button hover:bg-primary/90 transition-colors" data-product-id="1">加入购物车</button>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-500">库存: <span class="stock-count" data-product-id="5"></span>件</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg border border-gray-100 overflow-hidden group hover:shadow-md transition-shadow">
+                        <div class="relative pt-[75%] overflow-hidden">
+                            <img src="https://public.readdy.ai/ai/img_res/0370d72cf0688976701f8f490e8d9260.jpg" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="健康营养套装">
+                        </div>
+                        <div class="p-4">
+                            <h3 class="text-lg font-medium mb-2">健康营养套装</h3>
+                            <p class="text-gray-600 text-sm mb-3">专业配方，全面营养补充</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xl font-bold text-primary">¥299</span>
+                                <button class="add-to-cart bg-primary text-white px-4 py-2 rounded-button hover:bg-primary/90 transition-colors" data-product-id="2">加入购物车</button>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-500">库存: <span class="stock-count" data-product-id="6"></span>件</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg border border-gray-100 overflow-hidden group hover:shadow-md transition-shadow">
+                        <div class="relative pt-[75%] overflow-hidden">
+                            <img src="https://public.readdy.ai/ai/img_res/a53b8108273935a8e6a6b670dad10858.jpg" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="智能看护套装">
+                        </div>
+                        <div class="p-4">
+                            <h3 class="text-lg font-medium mb-2">智能看护套装</h3>
+                            <p class="text-gray-600 text-sm mb-3">24小时贴心守护，安全放心</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xl font-bold text-primary">¥599</span>
+                                <button class="add-to-cart bg-primary text-white px-4 py-2 rounded-button hover:bg-primary/90 transition-colors" data-product-id="3">加入购物车</button>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-500">库存: <span class="stock-count" data-product-id="7"></span>件</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-center mt-8">
+                    <div class="inline-flex rounded-lg border border-gray-200">
+                        <button class="px-4 py-2 border-r border-gray-200 text-gray-500 hover:text-primary">上一页</button>
+                        <button class="px-4 py-2 bg-primary text-white">1</button>
+                        <button class="px-4 py-2 border-x border-gray-200 text-gray-600 hover:text-primary">2</button>
+                        <button class="px-4 py-2 text-gray-600 hover:text-primary">3</button>
+                        <button class="px-4 py-2 border-l border-gray-200 text-gray-600 hover:text-primary">下一页</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div id="cartPanel" class="fixed top-16 right-0 w-96 bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-40 h-[calc(100vh-4rem)]">
+    <div class="p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold">购物车</h3>
+            <button id="closeCart" class="text-gray-400 hover:text-gray-600">
+                <i class="ri-close-line text-xl"></i>
+            </button>
+        </div>
+        <div class="space-y-4" id="cartItems">
+            <!-- 购物车内容将在这里动态生成 -->
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 p-6 bg-white border-t">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-gray-600">共 <span class="cart-item-total">0</span> 件商品</span>
+                <span class="text-xl font-bold text-primary cart-total-price">¥0.00</span>
+            </div>
+            <button class="w-full bg-primary text-white py-3 rounded-button hover:bg-primary/90 transition-colors">去结算</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="fixed top-4 right-4 z-50 transform translate-x-full transition-transform duration-300"></div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // 定义 showToast 函数
+        function showToast(message, success = true) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.createElement('div');
+            toastMessage.classList.add('bg-white', 'p-4', 'rounded-lg', 'drop-shadow-md', 'flex', 'items-center', 'justify-between');
+            if (success) {
+                toastMessage.classList.add('bg-green-100', 'text-green-800');
+            } else {
+                toastMessage.classList.add('bg-red-100', 'text-red-800');
+            }
+            toastMessage.innerHTML = `
+                <span>${message}</span>
+                <button class="text-gray-400 hover:text-gray-600">
+                    <i class="ri-close-line text-xl"></i>
+                </button>
+            `;
+            toast.innerHTML = '';
+            toast.appendChild(toastMessage);
+            toast.classList.add('translate-x-0');
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => {
+                    toast.innerHTML = '';
+                }, 300);
+            }, 3000);
+        }
+
+        // 从localStorage获取用户信息和token
+        const userId = localStorage.getItem('userId') || 'mock_user';
+        const token = localStorage.getItem('token') || 'mock_token';
+
+        // 设置AJAX全局请求头
+        $.ajaxSetup({
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        });
+
+        // 在页面加载时获取所有商品的库存数据并更新前端显示
+        $.ajax({
+            url: '/日常购物/allProducts',
+            type: 'GET',
+            success: function (products) {
+                products.forEach(function (product) {
+                    const stockElement = $(`.stock-count[data-product-id="${product.id}"]`);
+                    stockElement.text(product.stock);
+                });
+            },
+            error: function (xhr) {
+                if (xhr.status === 401) {
+                    // 未授权，跳转到登录页面
+                    window.location.href = '/login';
+                } else {
+                    showToast('获取库存数据失败', false);
+                }
+            }
+        });
+
+        // 处理加入购物车按钮点击事件
+        $('.add-to-cart').on('click', function () {
+            const productId = $(this).data('product-id');
+
+            // 先获取最新库存数据
+            $.ajax({
+                url: `/日常购物/${productId}`,
+                type: 'GET',
+                success: function (product) {
+                    const stockElement = $(`.stock-count[data-product-id="${product.id}"]`);
+                    const currentStock = product.stock;
+
+                    if (currentStock <= 0) {
+                        showToast('该商品已售罄', false);
+                        return;
+                    }
+
+                    // 构造购物车数据
+                    const shoppingCartData = {
+                        userId: userId,
+                        productId: product.id,  // 直接发送产品ID
+                        quantity: 1
+                    };
+
+                    // 发送AJAX请求添加到购物车
+                    $.ajax({
+                        url: '/日常购物/addToCart',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(shoppingCartData),
+                        success: function (response) {
+                            if (response) {
+                                // 更新前端库存显示
+                                stockElement.text(currentStock - 1);
+                                showToast('已添加到购物车');
+
+                                // 更新购物车面板显示
+                                fetchCartItems();
+                            } else {
+                                showToast('添加到购物车失败', false);
+                            }
+                        },
+                        error: function (xhr) {
+                            if (xhr.status === 401) {
+                                window.location.href = '/login';
+                            } else {
+                                showToast('网络错误，请重试', false);
+                            }
+                        }
+                    });
+                },
+                error: function (xhr) {
+                    if (xhr.status === 401) {
+                        window.location.href = '/login';
+                    } else {
+                        showToast('获取商品信息失败', false);
+                    }
+                }
+            });
+        });
+
+        // 从后端获取购物车内容并更新前端显示
+        function fetchCartItems() {
+            $.ajax({
+                url: `/日常购物/getCartByUserId/${userId}`,
+                type: 'GET',
+                success: function (cartItems) {
+                    const cartItemsContainer = document.getElementById('cartItems');
+                    cartItemsContainer.innerHTML = '';
+                    let totalItems = 0;
+                    let totalPrice = 0;
+
+                    cartItems.forEach(function (cartItem) {
+                        if (cartItem.product) {
+                            const itemHtml = `
+                                <div class="flex items-center space-x-4">
+                                    <img src="${cartItem.product.image_url}" class="w-20 h-20 object-cover rounded" alt="${cartItem.product.name}">
+                                    <div class="flex-1">
+                                        <h4 class="font-medium">${cartItem.product.name}</h4>
+                                        <div class="flex items-center justify-between mt-2">
+                                            <span class="text-primary font-medium">¥${cartItem.product.price}</span>
+                                            <div class="flex items-center space-x-2">
+                                                <button class="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center minus-button" data-cart-item-id="${cartItem.id}">-</button>
+                                                <span class="w-8 text-center cart-item-quantity">${cartItem.quantity}</span>
+                                                <button class="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center plus-button" data-cart-item-id="${cartItem.id}">+</button>
+                                            </div>
+                                            <button class="delete-cart-item text-red-500 hover:text-red-700 ml-2" data-cart-item-id="${cartItem.id}"><i class="ri-delete-bin-line"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            cartItemsContainer.innerHTML += itemHtml;
+                            totalItems += cartItem.quantity;
+                            totalPrice += cartItem.product.price * cartItem.quantity;
+                        }
+                    });
+
+                    // 更新购物车总数显示
+                    $('#cartBtn span').text(totalItems);
+
+                    // 更新购物车面板底部信息
+                    $('.cart-item-total').text(totalItems);
+                    $('.cart-total-price').text(`¥${totalPrice.toFixed(2)}`);
+                },
+                error: function (xhr) {
+                    if (xhr.status === 401) {
+                        window.location.href = '/login';
+                    } else {
+                        showToast('获取购物车内容失败', false);
+                    }
+                }
+            });
+        }
+
+        // 更新购物车中商品数量
+        function updateCartQuantity(cartItemId, newQuantity) {
+            const shoppingCartData = {
+                id: cartItemId,
+                quantity: newQuantity
+            };
+            $.ajax({
+                url: '/日常购物/updateCartQuantity',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(shoppingCartData),
+                success: function (response) {
+                    if (!response) {
+                        showToast('更新购物车数量失败', false);
+                    }
+                },
+                error: function () {
+                    showToast('网络错误，请重试', false);
+                }
+            });
+        }
+
+        // 从购物车中删除商品
+        function deleteCartItem(cartItemId) {
+            $.ajax({
+                url: `/日常购物/deleteFromCart/${cartItemId}`,
+                type: 'DELETE',
+                success: function (response) {
+                    if (!response) {
+                        showToast('删除购物车商品失败', false);
+                    } else {
+                        showToast('已从购物车删除', true);
+                    }
+                },
+                error: function () {
+                    showToast('网络错误，请重试', false);
+                }
+            });
+        }
+
+        // 更新购物车总价
+        function updateTotalPrice() {
+            const itemPrices = document.querySelectorAll('.text-primary.font-medium');
+            const itemQuantities = document.querySelectorAll('.cart-item-quantity');
+            let total = 0;
+            itemPrices.forEach(function (priceElement, index) {
+                const price = parseFloat(priceElement.textContent.replace('¥', ''));
+                const quantity = parseInt(itemQuantities[index].textContent);
+                total += price * quantity;
+            });
+            document.getElementById('cartTotalPrice').textContent = `¥${total}`;
+        }
+
+        const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+
+        dropdownToggles.forEach((toggle) => {
+            const dropdown = toggle.closest('.dropdown');
+            const dropdownContent = dropdown.querySelector('.dropdown-content');
+
+            toggle.addEventListener('click', function (e) {
+                e.preventDefault();
+                dropdownContent.style.display = dropdownContent.style.display === 'block'? 'none' : 'block';
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!dropdown.contains(e.target)) {
+                    dropdownContent.style.display = 'none';
+                }
+            });
+        });
+        
+        // 商品分类筛选功能
+        const categoryItems = document.querySelectorAll('.category-item');
+        categoryItems.forEach(item => {
+            item.addEventListener('click', function() {
+                // 移除所有分类的active状态
+                categoryItems.forEach(cat => cat.classList.remove('active'));
+                // 添加当前分类的active状态
+                this.classList.add('active');
+                
+                // 获取分类名称
+                const categoryName = this.querySelector('span').textContent;
+                
+                // 筛选商品
+                filterProductsByCategory(categoryName);
+                
+                showToast(`已切换到${categoryName}分类`);
+            });
+        });
+        
+        // 商品排序功能
+        const sortButtons = document.querySelectorAll('.px-1.py-1 button');
+        sortButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // 更新按钮状态
+                sortButtons.forEach(btn => {
+                    btn.classList.remove('bg-white', 'shadow-sm', 'text-primary');
+                    btn.classList.add('text-gray-600');
+                });
+                this.classList.add('bg-white', 'shadow-sm', 'text-primary');
+                this.classList.remove('text-gray-600');
+                
+                // 获取排序方式
+                const sortType = this.textContent;
+                
+                // 排序商品
+                sortProducts(sortType);
+                
+                showToast(`已按${sortType}排序`);
+            });
+        });
+        
+        // 价格区间筛选功能
+        const priceFilterBtn = document.querySelector('.flex.items-center.space-x-2.text-sm.text-gray-600');
+        if (priceFilterBtn) {
+            const minPriceInput = priceFilterBtn.querySelector('input[type="number"]:first-child');
+            const maxPriceInput = priceFilterBtn.querySelector('input[type="number"]:last-child');
+            
+            // 添加筛选按钮
+            const filterButton = document.createElement('button');
+            filterButton.textContent = '筛选';
+            filterButton.className = 'px-4 py-1 bg-primary text-white rounded hover:bg-primary/90 transition-colors';
+            filterButton.addEventListener('click', function() {
+                const minPrice = parseFloat(minPriceInput.value) || 0;
+                const maxPrice = parseFloat(maxPriceInput.value) || Infinity;
+                
+                filterProductsByPrice(minPrice, maxPrice);
+                showToast(`已筛选价格区间：¥${minPrice} - ¥${maxPrice === Infinity ? '不限' : maxPrice}`);
+            });
+            
+            priceFilterBtn.appendChild(filterButton);
+        }
+        
+        // 按分类筛选商品
+        function filterProductsByCategory(category) {
+            const products = document.querySelectorAll('#productList > div');
+            products.forEach(product => {
+                const productName = product.querySelector('h3').textContent;
+                // 这里可以根据实际需求修改筛选逻辑
+                // 目前只是模拟筛选效果
+                product.style.display = 'block';
+            });
+        }
+        
+        // 按价格筛选商品
+        function filterProductsByPrice(minPrice, maxPrice) {
+            const products = document.querySelectorAll('#productList > div');
+            products.forEach(product => {
+                const priceText = product.querySelector('.text-xl.font-bold.text-primary').textContent;
+                const price = parseFloat(priceText.replace('¥', ''));
+                
+                if (price >= minPrice && price <= maxPrice) {
+                    product.style.display = 'block';
+                } else {
+                    product.style.display = 'none';
+                }
+            });
+        }
+        
+        // 商品排序功能
+        function sortProducts(sortType) {
+            const productList = document.getElementById('productList');
+            const products = Array.from(productList.children);
+            
+            products.sort((a, b) => {
+                if (sortType === '综合排序') {
+                    // 综合排序：按销量和价格综合考虑
+                    return 0;
+                } else if (sortType === '销量优先') {
+                    // 销量优先：这里模拟销量排序
+                    return Math.random() - 0.5;
+                } else if (sortType === '价格优先') {
+                    // 价格优先：按价格从低到高排序
+                    const priceA = parseFloat(a.querySelector('.text-xl.font-bold.text-primary').textContent.replace('¥', ''));
+                    const priceB = parseFloat(b.querySelector('.text-xl.font-bold.text-primary').textContent.replace('¥', ''));
+                    return priceA - priceB;
+                }
+                return 0;
+            });
+            
+            // 重新排列商品
+            products.forEach(product => productList.appendChild(product));
+        }
+    });
+</script>
+</body>
+</html>

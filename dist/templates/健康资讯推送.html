@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康资讯 - 乐享晚年</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7AA968',
+                        secondary: '#5B9BD5'
+                    },
+                    borderRadius: {
+                        'none': '0px',
+                        'sm': '4px',
+                        DEFAULT: '8px',
+                        'md': '12px',
+                        'lg': '16px',
+                        'xl': '20px',
+                        '2xl': '24px',
+                        '3xl': '32px',
+                        'full': '9999px',
+                        'button': '8px'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        .article-card {
+            transition: all 0.3s ease;
+        }
+        .article-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        input[type="range"] {
+            appearance: none;
+            width: 100%;
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #7AA968;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+<header class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
+    <nav class="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-8">
+            <a href="/" class="text-2xl font-['Pacifico'] text-primary">乐龄生活</a>
+            <div class="hidden lg:flex space-x-6">
+                <a href="/" class="nav-link text-gray-600 hover:text-primary transition-colors">首页</a>
+                <a href="日常购物.html" class="nav-link text-gray-600 hover:text-primary transition-colors">生活服务</a>
+                <a href="健康数据管理.html" class="nav-link text-gray-600 hover:text-primary transition-colors">健康管理</a>
+                <div class="dropdown relative">
+                    <a href="#" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">社交娱乐</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="社区交流.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">社区交流</a>
+                        <a href="兴趣小组.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">兴趣小组</a>
+                        <a href="文化娱乐.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">文化娱乐</a>
+                    </div>
+                </div>
+                <a href="防诈骗提醒.html" class="nav-link text-gray-600 hover:text-primary transition-colors">防诈骗提醒</a>
+                <div class="dropdown relative">
+                    <a href="#" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">信息管理</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="通知公告.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">通知公告</a>
+                        <a href="服务评价与反馈.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">服务评价与反馈</a>
+                        <a href="费用管理.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">费用管理</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-6">
+            <div class="relative">
+                <input type="search" placeholder="搜索商品" class="search-input w-64 h-10 pl-10 pr-4 rounded-full border border-gray-200 focus:outline-none focus:border-primary text-sm">
+                <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            </div>
+            <button class="w-10 h-10 flex items-center justify-center relative cursor-pointer" id="cartBtn">
+                <i class="ri-shopping-cart-line text-xl text-gray-600"></i>
+                <span class="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-xs rounded-full flex items-center justify-center">2</span>
+            </button>
+            <button class="w-10 h-10 flex items-center justify-center cursor-pointer" onclick="window.location.href='/个人信息'">
+                <i class="ri-user-line text-xl text-gray-600"></i>
+            </button>
+        </div>
+    </nav>
+    <style>
+        .nav-link {
+            padding: 10px 16px;
+            transition: color 0.3s ease, background-color 0.3s ease;
+            font-size: 16px;
+            position: relative;
+            color: #333;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-link:hover {
+            color: #7AA968;
+            background-color: rgba(122, 169, 104, 0.1);
+            border-radius: 8px;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #ffffff;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            z-index: 100;
+            padding: 8px 0;
+            margin-top: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .dropdown-content a {
+            color: #333;
+            padding: 10px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+            color: #7AA968;
+        }
+    </style>
+</header>
+
+<main class="container mx-auto px-4 pt-24 pb-12">
+    <div class="grid grid-cols-12 gap-8">
+        <div class="col-span-3">
+            <div class="sticky top-24">
+                <div class="bg-white rounded-lg p-6 mb-6">
+                    <h3 class="text-lg font-medium mb-4">资讯分类</h3>
+                    <div class="space-y-2">
+                        <button class="w-full text-left px-4 py-2 rounded-lg bg-primary/10 text-primary">常见老年病预防</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">养生保健知识</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">康复训练方法</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">健康饮食指南</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">心理健康关怀</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg p-6 mb-6">
+                    <h3 class="text-lg font-medium mb-4">资讯形式</h3>
+                    <div class="space-y-3">
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary" checked>
+                            <span>图文资讯</span>
+                        </label>
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary">
+                            <span>视频资讯</span>
+                        </label>
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary">
+                            <span>音频资讯</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg p-6">
+                    <h3 class="text-lg font-medium mb-4">时间筛选</h3>
+                    <div class="space-y-2">
+                        <button class="w-full text-left px-4 py-2 rounded-lg bg-primary/10 text-primary">最新发布</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">近一周</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">近一月</button>
+                        <button class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100">近三月</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-span-6">
+            <div class="bg-white rounded-lg p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-medium">为您推荐</h2>
+                    <div class="flex items-center space-x-2">
+                        <button class="text-sm text-gray-500 hover:text-primary">更多推荐</button>
+                        <i class="ri-arrow-right-s-line text-gray-500"></i>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <button onclick="filterArticles('all')" class="filter-btn px-4 py-2 bg-primary text-white rounded-button text-sm">全部</button>
+                    <button onclick="filterArticles('养生保健')" class="filter-btn px-4 py-2 bg-gray-100 text-gray-600 rounded-button text-sm hover:bg-primary hover:text-white transition-colors">养生保健</button>
+                    <button onclick="filterArticles('健康饮食')" class="filter-btn px-4 py-2 bg-gray-100 text-gray-600 rounded-button text-sm hover:bg-primary hover:text-white transition-colors">健康饮食</button>
+                    <button onclick="filterArticles('运动健身')" class="filter-btn px-4 py-2 bg-gray-100 text-gray-600 rounded-button text-sm hover:bg-primary hover:text-white transition-colors">运动健身</button>
+                    <button onclick="filterArticles('心理健康')" class="filter-btn px-4 py-2 bg-gray-100 text-gray-600 rounded-button text-sm hover:bg-primary hover:text-white transition-colors">心理健康</button>
+                    <button onclick="filterArticles('疾病预防')" class="filter-btn px-4 py-2 bg-gray-100 text-gray-600 rounded-button text-sm hover:bg-primary hover:text-white transition-colors">疾病预防</button>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="article-card rounded-lg overflow-hidden shadow-sm">
+                        <img src="https://public.readdy.ai/ai/img_res/4c180233dd404c65145026e6000f4ce7.jpg" class="w-full h-40 object-cover" alt="太极养生">
+                        <div class="p-4">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <span class="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">养生保健</span>
+                                <span class="text-xs text-gray-500">5分钟阅读</span>
+                            </div>
+                            <h3 class="text-lg font-medium mb-2">太极养生：适合老年人的晨练方式</h3>
+                            <p class="text-sm text-gray-600 line-clamp-2">太极拳是一项传统的养生运动，动作柔和缓慢，特别适合老年人锻炼。本文将为您详细介绍太极拳的基本动作要领和健康益处。</p>
+                        </div>
+                    </div>
+                    <div class="article-card rounded-lg overflow-hidden shadow-sm">
+                        <img src="https://public.readdy.ai/ai/img_res/bf608dc674d9d62729b893311a456e1d.jpg" class="w-full h-40 object-cover" alt="健康饮食">
+                        <div class="p-4">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <span class="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">健康饮食</span>
+                                <span class="text-xs text-gray-500">8分钟阅读</span>
+                            </div>
+                            <h3 class="text-lg font-medium mb-2">老年人饮食营养搭配指南</h3>
+                            <p class="text-sm text-gray-600 line-clamp-2">合理的饮食搭配对老年人的健康至关重要。本文将从蛋白质、维生素、矿物质等多个角度，为您介绍科学的营养膳食方案。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="article-card bg-white rounded-lg overflow-hidden">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-white">
+                                    <i class="ri-hospital-line"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium">北京协和医院</h4>
+                                    <span class="text-sm text-gray-500">权威发布</span>
+                                </div>
+                            </div>
+                            <button class="text-sm text-primary hover:text-primary/80">关注</button>
+                        </div>
+                        <h3 class="text-xl font-medium mb-3">高血压患者的日常管理指南</h3>
+                        <p class="text-gray-600 mb-4">高血压是老年人常见的慢性病之一，科学的日常管理对控制血压至关重要。本文将从饮食、运动、用药等方面为您提供专业的建议。</p>
+                        <img src="https://public.readdy.ai/ai/img_res/9ffba329743eec4067376bf577fbadf1.jpg" class="w-full rounded-lg mb-4" alt="血压检测">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-6">
+                                <button class="flex items-center space-x-2 text-gray-500 hover:text-primary">
+                                    <i class="ri-thumb-up-line"></i>
+                                    <span>238</span>
+                                </button>
+                                <button class="flex items-center space-x-2 text-gray-500 hover:text-primary">
+                                    <i class="ri-bookmark-line"></i>
+                                    <span>收藏</span>
+                                </button>
+                                <button class="flex items-center space-x-2 text-gray-500 hover:text-primary">
+                                    <i class="ri-share-line"></i>
+                                    <span>分享</span>
+                                </button>
+                            </div>
+                            <div class="flex items-center space-x-2 text-sm text-gray-500">
+                                <i class="ri-time-line"></i>
+                                <span>2025-03-15</span>
+                                <span>阅读 1.2k</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="article-card bg-white rounded-lg overflow-hidden">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white">
+                                    <i class="ri-mental-health-line"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium">健康生活频道</h4>
+                                    <span class="text-sm text-gray-500">生活方式</span>
+                                </div>
+                            </div>
+                            <button class="text-sm text-primary hover:text-primary/80">关注</button>
+                        </div>
+                        <h3 class="text-xl font-medium mb-3">春季养生：老年人如何调理身心</h3>
+                        <p class="text-gray-600 mb-4">春季是养生的好时节，本文将为您介绍适合老年人的春季养生方法，包括饮食调理、运动建议和作息安排等内容。</p>
+                        <img src="https://public.readdy.ai/ai/img_res/c173ad75ab830bb7f2341dfd5ce1f3c9.jpg" class="w-full rounded-lg mb-4" alt="春季养生">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-6">
+                                <button class="flex items-center space-x-2 text-gray-500 hover:text-primary">
+                                    <i class="ri-thumb-up-line"></i>
+                                    <span>186</span>
+                                </button>
+                                <button class="flex items-center space-x-2 text-gray-500 hover:text-primary">
+                                    <i class="ri-bookmark-line"></i>
+                                    <span>收藏</span>
+                                </button>
+                                <button class="flex items-center space-x-2 text-gray-500 hover:text-primary">
+                                    <i class="ri-share-line"></i>
+                                    <span>分享</span>
+                                </button>
+                            </div>
+                            <div class="flex items-center space-x-2 text-sm text-gray-500">
+                                <i class="ri-time-line"></i>
+                                <span>2025-03-14</span>
+                                <span>阅读 956</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-span-3">
+            <div class="sticky top-24">
+                <div class="bg-white rounded-lg p-6 mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium">阅读设置</h3>
+                        <button id="resetSettings" class="text-sm text-primary hover:text-primary/80">恢复默认</button>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm">字体大小</span>
+                                <span class="text-sm text-gray-500" id="fontSizeValue">16px</span>
+                            </div>
+                            <input type="range" min="14" max="24" value="16" class="w-full" id="fontSize">
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm">行间距</span>
+                                <span class="text-sm text-gray-500" id="lineHeightValue">1.5</span>
+                            </div>
+                            <input type="range" min="10" max="20" value="15" class="w-full" id="lineHeight">
+                        </div>
+                        <button class="flex items-center justify-center space-x-2 w-full py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20">
+                            <i class="ri-volume-up-line"></i>
+                            <span>开启语音朗读</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg p-6 mb-6">
+                    <h3 class="text-lg font-medium mb-4">热门资讯</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start space-x-3">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">1</span>
+                            <div>
+                                <h4 class="text-sm font-medium mb-1">老年人膝关节保养指南：预防关节炎的有效方法</h4>
+                                <span class="text-xs text-gray-500">阅读 2.8k</span>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">2</span>
+                            <div>
+                                <h4 class="text-sm font-medium mb-1">中医养生：四季养生要点与实践方法</h4>
+                                <span class="text-xs text-gray-500">阅读 2.3k</span>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm">3</span>
+                            <div>
+                                <h4 class="text-sm font-medium mb-1">老年人营养早餐搭配建议：健康美味两不误</h4>
+                                <span class="text-xs text-gray-500">阅读 1.9k</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg p-6">
+                    <h3 class="text-lg font-medium mb-4">健康档案</h3>
+                    <div class="text-center py-8">
+                        <div class="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                            <i class="ri-file-user-line text-4xl text-primary"></i>
+                        </div>
+                        <p class="text-gray-600 mb-4">完善健康档案，获取个性化健康资讯推荐</p>
+                        <button class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">立即完善</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    const fontSize = document.getElementById('fontSize');
+    const fontSizeValue = document.getElementById('fontSizeValue');
+    const lineHeight = document.getElementById('lineHeight');
+    const lineHeightValue = document.getElementById('lineHeightValue');
+    const resetSettings = document.getElementById('resetSettings');
+    const articles = document.querySelectorAll('.article-card p');
+    fontSize.addEventListener('input', (e) => {
+        const value = e.target.value;
+        fontSizeValue.textContent = value + 'px';
+        articles.forEach(article => {
+            article.style.fontSize = value + 'px';
+        });
+    });
+
+    lineHeight.addEventListener('input', (e) => {
+        const value = e.target.value / 10;
+        lineHeightValue.textContent = value;
+        articles.forEach(article => {
+            article.style.lineHeight = value;
+        });
+    });
+
+    resetSettings.addEventListener('click', () => {
+        fontSize.value = 16;
+        lineHeight.value = 15;
+        fontSizeValue.textContent = '16px';
+        lineHeightValue.textContent = '1.5';
+        articles.forEach(article => {
+            article.style.fontSize = '16px';
+            article.style.lineHeight = '1.5';
+        });
+    });
+
+    document.querySelectorAll('.article-card button').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const icon = this.querySelector('i');
+            const count = this.querySelector('span');
+            if (icon.classList.contains('ri-thumb-up-line')) {
+                icon.classList.toggle('ri-thumb-up-fill');
+                if (count) {
+                    count.textContent = parseInt(count.textContent) + (icon.classList.contains('ri-thumb-up-fill') ? 1 : -1);
+                }
+            } else if (icon.classList.contains('ri-bookmark-line')) {
+                icon.classList.toggle('ri-bookmark-fill');
+                if (icon.classList.contains('ri-bookmark-fill')) {
+                    showNotification('已收藏到我的收藏夹');
+                } else {
+                    showNotification('已取消收藏');
+                }
+            } else if (icon.classList.contains('ri-share-line')) {
+                shareArticle(this.closest('.article-card'));
+            }
+        });
+    });
+    
+    // 资讯分类筛选功能
+    function filterArticles(category) {
+        const allArticles = document.querySelectorAll('.article-card');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        
+        // 更新按钮状态
+        filterBtns.forEach(btn => {
+            btn.classList.remove('bg-primary', 'text-white');
+            btn.classList.add('bg-gray-100', 'text-gray-600');
+        });
+        
+        // 高亮当前选中的按钮
+        const activeBtn = document.querySelector(`.filter-btn[onclick="filterArticles('${category}')"]`);
+        if (activeBtn) {
+            activeBtn.classList.remove('bg-gray-100', 'text-gray-600');
+            activeBtn.classList.add('bg-primary', 'text-white');
+        }
+        
+        // 筛选文章
+        allArticles.forEach(article => {
+            if (category === 'all') {
+                article.style.display = 'block';
+            } else {
+                const tags = article.querySelectorAll('.px-2.py-1');
+                let hasCategory = false;
+                tags.forEach(tag => {
+                    if (tag.textContent.includes(category)) {
+                        hasCategory = true;
+                    }
+                });
+                article.style.display = hasCategory ? 'block' : 'none';
+            }
+        });
+    }
+    
+    // 分享文章功能
+    function shareArticle(articleCard) {
+        const title = articleCard.querySelector('h3').textContent;
+        const shareOptions = [
+            { name: '微信', icon: 'ri-wechat-line', color: '#07C160' },
+            { name: '朋友圈', icon: 'ri-wechat-fill', color: '#07C160' },
+            { name: '微博', icon: 'ri-weibo-line', color: '#E6162D' },
+            { name: 'QQ', icon: 'ri-qq-line', color: '#12B7F5' },
+            { name: '复制链接', icon: 'ri-link', color: '#666666' }
+        ];
+        
+        const shareHtml = `
+            <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" id="shareModal">
+                <div class="bg-white rounded-lg p-6 w-80">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium">分享到</h3>
+                        <button onclick="closeShareModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="ri-close-line text-xl"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-5 gap-4">
+                        ${shareOptions.map(option => `
+                            <button onclick="shareTo('${option.name}', '${title}')" class="flex flex-col items-center gap-2">
+                                <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: ${option.color}20">
+                                    <i class="${option.icon} text-xl" style="color: ${option.color}"></i>
+                                </div>
+                                <span class="text-xs text-gray-600">${option.name}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', shareHtml);
+    }
+    
+    // 关闭分享弹窗
+    function closeShareModal() {
+        const modal = document.getElementById('shareModal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+    
+    // 分享到指定平台
+    function shareTo(platform, title) {
+        closeShareModal();
+        
+        if (platform === '复制链接') {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(() => {
+                showNotification('链接已复制到剪贴板');
+            }).catch(() => {
+                showNotification('复制失败，请手动复制');
+            });
+        } else {
+            showNotification(`已分享到${platform}`);
+        }
+    }
+    
+    // 显示通知
+    function showNotification(message) {
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-20 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in';
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.classList.add('animate-fade-out');
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        }, 2000);
+    }
+</script>
+<style>
+    @keyframes fade-in {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fade-out {
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(-10px); }
+    }
+    .animate-fade-in {
+        animation: fade-in 0.3s ease-out;
+    }
+    .animate-fade-out {
+        animation: fade-out 0.3s ease-out forwards;
+    }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+
+        dropdownToggles.forEach((toggle) => {
+            const dropdown = toggle.closest('.dropdown');
+            const dropdownContent = dropdown.querySelector('.dropdown-content');
+
+            toggle.addEventListener('click', function (e) {
+                e.preventDefault();
+                dropdownContent.style.display = dropdownContent.style.display === 'block' ? 'none' : 'block';
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!dropdown.contains(e.target)) {
+                    dropdownContent.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>

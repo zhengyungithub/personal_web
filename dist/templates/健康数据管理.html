@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康档案管理 - 乐龄生活</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Remix Icon图标库 -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="js/axios.min.js"></script>
+    <style>
+
+    </style>
+    <script>
+        // 引入jQuery库
+        document.write('<script src="https://code.jquery.com/jquery-3.6.0.min.js"><\/script>');
+        // 引入axios库
+        document.write('<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"><\/script>');
+        // 引入Bootstrap JS
+        document.write('<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"><\/script>');
+
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6B9B76',
+                        secondary: '#A5C0AA'
+                    },
+                    borderRadius: {
+                        'none': '0px',
+                        'sm': '4px',
+                        DEFAULT: '8px',
+                        'md': '12px',
+                        'lg': '16px',
+                        'xl': '20px',
+                        '2xl': '24px',
+                        '3xl': '32px',
+                        'full': '9999px',
+                        'button': '8px'
+                    }
+                }
+            }
+        };
+
+        // 全局变量
+        let currentPage = 1;
+        let totalPages = 1;
+        let totalItems = 0;
+
+        // 检查用户是否登录
+        function checkAuth() {
+            return true;
+        }
+
+        /**
+         * 格式化日期时间
+         * @param {string} dateString - 日期字符串，可以是ISO格式或已格式化的字符串
+         * @returns {string} 格式化后的日期时间字符串，格式为"YYYY-MM-DD HH:mm:ss"
+         */
+        // 改进的日期格式化函数，解决乱码问题
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+
+            // 处理后端返回的ISO格式日期时间字符串
+            if (dateString.includes('T')) {
+                try {
+                    const date = new Date(dateString);
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const hours = String(date.getHours()).padStart(2, '0');
+                    const minutes = String(date.getMinutes()).padStart(2, '0');
+                    const seconds = String(date.getSeconds()).padStart(2, '0');
+
+                    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+                } catch (error) {
+                    console.error('日期格式化失败:', dateString, error);
+                    return dateString;
+                }
+            }
+
+            // 如果已经是格式化后的字符串，直接返回
+            return dateString;
+        }
+
+        // 查看健康档案详情
+        function viewRecordDetails(id) {
+            if (!checkAuth()) return;
+
+            axios.get(`/档案管理/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+                .then(response => {
+                    const record = response.data;
+                    document.getElementById('view-id').textContent = record.id;
+                    document.getElementById('view-recordDate').textContent = formatDate(record.recordDate);
+                    document.getElementById('view-height').textContent = record.height || '-';
+                    document.getElementById('view-weight').textContent = record.weight || '-';
+                    document.getElementById('view-systolic').textContent = record.systolicBloodPressure || '-';
+                    document.getElementById('view-diastolic').textContent = record.diastolicBloodPressure || '-';
+                    document.getElementById('view-heartRate').textContent = record.heartRate || '-';
+                    document.getElementById('view-bloodSugar').textContent = record.bloodSugar || '-';
+                    document.getElementById('view-temperature').textContent = record.bodyTemperature || '-';
+                    document.getElementById('view-note').textContent = record.note || '-';
+
+                    const modal = new bootstrap.Modal(document.getElementById('viewRecordModal'));
+                    modal.show();
+                })
+                .catch(error => {
+                    console.error('获取档案详情失败:', error);
+                    alert('获取档案详情失败: ' + (error.response?.data?.message || error.message));
+                });
+        }
+
+        // 编辑健康档案
+        function editRecord(id) {
+            if (!checkAuth()) return;
+
+            axios.get(`/档案管理/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+                .then(response => {
+                    const record = response.data;
+                    document.getElementById('edit-id').value = record.id;
+                    document.getElementById('edit-height').value = record.height || '';
+                    document.getElementById('edit-weight').value = record.weight || '';
+                    document.getElementById('edit-systolic').value = record.systolicBloodPressure || '';
+                    document.getElementById('edit-diastolic').value = record.diastolicBloodPressure || '';
+                    document.getElementById('edit-heartRate').value = record.heartRate || '';
+                    document.getElementById('edit-bloodSugar').value = record.bloodSugar || '';
+                    document.getElementById('edit-temperature').value = record.bodyTemperature || '';
+                    document.getElementById('edit-note').value = record.note || '';
+
+                    const modal = new bootstrap.Modal(document.getElementById('editRecordModal'));
+                    modal.show();
+                })
+                .catch(error => {
+                    console.error('获取编辑数据失败:', error);
+                    alert('获取编辑数据失败: ' + (error.response?.data?.message || error.message));
+                });
+        }
+
+        // 提交编辑表单
+        async function submitEditForm() {
+            if (!checkAuth()) return;
+
+            const id = document.getElementById('edit-id').value;
+            const formData = {
+                height: document.getElementById('edit-height').value,
+                weight: document.getElementById('edit-weight').value,
+                systolicBloodPressure: document.getElementById('edit-systolic').value,
+                diastolicBloodPressure: document.getElementById('edit-diastolic').value,
+                heartRate: document.getElementById('edit-heartRate').value,
+                bloodSugar: document.getElementById('edit-bloodSugar').value,
+                bodyTemperature: document.getElementById('edit-temperature').value,
+                note: document.getElementById('edit-note').value
+            };
+
+            try {
+                await axios.patch(`/档案管理/${id}`, formData, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                alert('修改成功');
+                bootstrap.Modal.getInstance(document.getElementById('editRecordModal')).hide();
+                fetchHealthRecords();
+            } catch (error) {
+                console.error('修改失败:', error);
+                alert('修改失败: ' + (error.response?.data?.message || error.message));
+            }
+        }
+
+        // 删除健康档案
+        function deleteRecord(id) {
+            if (!checkAuth()) return;
+
+            if (confirm('确定要删除这条健康档案吗？此操作不可撤销。')) {
+                axios.delete(`/档案管理/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                })
+                    .then(() => {
+                        alert('删除成功');
+                        fetchHealthRecords();
+                    })
+                    .catch(error => {
+                        console.error('删除失败:', error);
+                        alert('删除失败: ' + (error.response?.data?.message || error.message));
+                    });
+            }
+        }
+
+        // 更新分页按钮状态
+        function updatePaginationButtons() {
+            // 更新总记录数显示
+            $('.total-records').text(`共 ${totalItems} 条记录`);
+
+            // 更新上一页按钮状态
+            const prevBtn = $('.prev-page');
+            prevBtn.prop('disabled', currentPage <= 1);
+
+            // 更新下一页按钮状态
+            const nextBtn = $('.next-page');
+            nextBtn.prop('disabled', currentPage >= totalPages);
+
+            // 更新页码导航
+            updatePageNumbers();
+        }
+
+        // 更新页码导航
+        function updatePageNumbers() {
+            const container = $('.page-numbers');
+            container.empty();
+
+            // 只显示最多5个页码
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+            // 调整起始页码，确保显示足够的页码
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            // 添加第一页和省略号（如果需要）
+            if (startPage > 1) {
+                container.append(createPageButton(1));
+                if (startPage > 2) {
+                    container.append('<span class="px-3 py-1">...</span>');
+                }
+            }
+
+            // 添加页码按钮
+            for (let i = startPage; i <= endPage; i++) {
+                container.append(createPageButton(i));
+            }
+
+            // 添加最后一页和省略号（如果需要）
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    container.append('<span class="px-3 py-1">...</span>');
+                }
+                container.append(createPageButton(totalPages));
+            }
+        }
+
+        // 创建页码按钮
+        function createPageButton(page) {
+            const activeClass = page === currentPage ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-50';
+            return `
+                <button class="px-3 py-1 border rounded-button ${activeClass} page-button" data-page="${page}">
+                    ${page}
+                </button>
+            `;
+        }
+
+        // 修改 fetchHealthRecords 函数
+        async function fetchHealthRecords(searchTerm = '', page = 1) {
+            if (!checkAuth()) return;
+
+            try {
+                // 模拟数据
+                const mockData = {
+                    records: [
+                        {
+                            id: 1,
+                            recordDate: '2024-01-15T10:30:00',
+                            height: 175,
+                            weight: 65,
+                            systolicBloodPressure: 120,
+                            diastolicBloodPressure: 80,
+                            heartRate: 75,
+                            bloodSugar: 5.6,
+                            bodyTemperature: 36.5,
+                            note: '常规体检，各项指标正常'
+                        },
+                        {
+                            id: 2,
+                            recordDate: '2024-01-10T09:15:00',
+                            height: 168,
+                            weight: 58,
+                            systolicBloodPressure: 118,
+                            diastolicBloodPressure: 78,
+                            heartRate: 72,
+                            bloodSugar: 5.2,
+                            bodyTemperature: 36.4,
+                            note: '轻度高血压，建议注意饮食'
+                        },
+                        {
+                            id: 3,
+                            recordDate: '2024-01-05T14:20:00',
+                            height: 180,
+                            weight: 72,
+                            systolicBloodPressure: 125,
+                            diastolicBloodPressure: 85,
+                            heartRate: 78,
+                            bloodSugar: 5.8,
+                            bodyTemperature: 36.6,
+                            note: '体重略高，建议加强运动'
+                        },
+                        {
+                            id: 4,
+                            recordDate: '2023-12-28T11:00:00',
+                            height: 172,
+                            weight: 68,
+                            systolicBloodPressure: 130,
+                            diastolicBloodPressure: 88,
+                            heartRate: 80,
+                            bloodSugar: 6.0,
+                            bodyTemperature: 36.5,
+                            note: '血压偏高，需定期监测'
+                        },
+                        {
+                            id: 5,
+                            recordDate: '2023-12-20T15:30:00',
+                            height: 165,
+                            weight: 55,
+                            systolicBloodPressure: 115,
+                            diastolicBloodPressure: 75,
+                            heartRate: 68,
+                            bloodSugar: 4.9,
+                            bodyTemperature: 36.3,
+                            note: '各项指标正常，保持良好状态'
+                        }
+                    ],
+                    totalItems: 5,
+                    totalPages: 1
+                };
+
+                // 更新分页信息
+                currentPage = page;
+                totalPages = mockData.totalPages;
+                totalItems = mockData.totalItems;
+
+                // 更新表格数据
+                const tableBody = $('tbody');
+                tableBody.empty();
+
+                mockData.records.forEach(record => {
+                    const row = `
+            <tr>
+                <td class="py-4 px-4 text-sm text-gray-900">
+                    <input type="checkbox" class="record-checkbox rounded border-gray-300 text-primary focus:ring-primary" data-id="${record.id}">
+                </td>
+                <td class="py-4 px-4 text-sm text-gray-900">#${record.id}</td>
+                <td class="py-4 px-4 text-sm text-gray-900">${formatDate(record.recordDate)}</td>
+                <td class="py-4 px-4 text-sm text-gray-900">${record.height || '-'}</td>
+                <td class="py-4 px-4 text-sm text-gray-900">${record.weight || '-'}</td>
+                <td class="py-4 px-4 text-sm text-gray-900">${record.systolicBloodPressure || '-'}/${record.diastolicBloodPressure || '-'}</td>
+                <td class="py-4 px-4 text-sm text-gray-900">${record.heartRate || '-'}</td>
+                <td class="py-4 px-4 text-sm text-gray-900">${record.bloodSugar || '-'}</td>
+                <td class="py-4 px-4 text-sm text-gray-900">${record.bodyTemperature || '-'}</td>
+                <td class="py-4 px-4 text-sm text-gray-900 max-w-xs truncate" title="${record.note || ''}">
+                    ${record.note? record.note.substring(0, 20) + (record.note.length > 20? '...' : '') : '-'}
+                </td>
+                <td class="py-4 px-4 text-sm space-x-3">
+                    <button class="text-blue-600 hover:text-blue-800 edit-button" data-id="${record.id}" title="编辑">
+                        <i class="ri-edit-line"></i>
+                    </button>
+                    <button class="text-green-600 hover:text-green-800 view-button" data-id="${record.id}" title="查看">
+                        <i class="ri-eye-line"></i>
+                    </button>
+                    <button class="text-red-600 hover:text-red-800 delete-button" data-id="${record.id}" title="删除">
+                        <i class="ri-delete-bin-line"></i>
+                    </button>
+                    <button class="text-yellow-600 hover:text-yellow-800 export-button" data-id="${record.id}" title="导出">
+                        <i class="ri-export-line"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+                    tableBody.append(row);
+                });
+
+                // 绑定按钮事件
+                $('.edit-button').on('click', function () {
+                    editRecord($(this).data('id'));
+                });
+
+                $('.view-button').on('click', function () {
+                    viewRecordDetails($(this).data('id'));
+                });
+
+                $('.delete-button').on('click', function () {
+                    deleteRecord($(this).data('id'));
+                });
+
+                // 更新分页按钮状态
+                updatePaginationButtons();
+            } catch (error) {
+                console.error('获取健康档案列表失败:', error);
+                alert('获取健康档案列表失败: ' + (error.response?.data?.message || error.message));
+            }
+        }
+
+        // 初始化页面
+        $(document).ready(function() {
+            if (!checkAuth()) return;
+
+            // 头像点击事件处理
+            const avatarBtn = document.getElementById('avatar-menu');
+            const avatarDropdown = document.getElementById('avatar-dropdown');
+
+            if (avatarBtn && avatarDropdown) {
+                // 点击头像显示/隐藏下拉菜单
+                avatarBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    avatarDropdown.classList.toggle('hidden');
+                });
+
+                // 点击页面其他位置隐藏下拉菜单
+                document.addEventListener('click', function() {
+                    avatarDropdown.classList.add('hidden');
+                });
+
+                // 阻止下拉菜单内部的点击事件冒泡
+                avatarDropdown.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
+
+            // 搜索功能
+            $('.search-input').on('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    currentPage = 1; // 搜索时重置为第一页
+                    fetchHealthRecords($(this).val());
+                }
+            });
+
+            // 新建档案按钮
+            $('.new-record-button').on('click', function() {
+                if (checkAuth()) {
+                    window.location.href = '/健康档案管理';
+                }
+            });
+
+            // 使用委托事件绑定上一页和下一页按钮的点击事件
+            $(document).on('click', '.prev-page', function() {
+                if (currentPage > 1) {
+                    fetchHealthRecords('', currentPage - 1);
+                }
+            });
+
+            $(document).on('click', '.next-page', function() {
+                if (currentPage < totalPages) {
+                    fetchHealthRecords('', currentPage + 1);
+                }
+            });
+
+            // 绑定页码按钮点击事件
+            $(document).on('click', '.page-button', function() {
+                const page = $(this).data('page');
+                fetchHealthRecords('', page);
+            });
+
+            // 初始加载数据
+            fetchHealthRecords();
+
+            // 全选/取消全选
+            $('#selectAll').on('change', function() {
+                const isChecked = $(this).prop('checked');
+                $('.record-checkbox').prop('checked', isChecked);
+                updateBatchButtons();
+            });
+
+            // 单个复选框变化时更新批量按钮状态
+            $(document).on('change', '.record-checkbox', function() {
+                updateBatchButtons();
+            });
+
+            // 批量删除
+            $('#batchDeleteBtn').on('click', function() {
+                const selectedIds = getSelectedIds();
+                if (selectedIds.length === 0) {
+                    alert('请选择要删除的记录');
+                    return;
+                }
+
+                if (confirm(`确定要删除选中的 ${selectedIds.length} 条记录吗？此操作不可撤销。`)) {
+                    // 模拟批量删除操作
+                    alert('批量删除成功');
+                    fetchHealthRecords();
+                }
+            });
+
+            // 批量导出
+            $('#batchExportBtn').on('click', function() {
+                const selectedIds = getSelectedIds();
+                if (selectedIds.length === 0) {
+                    alert('请选择要导出的记录');
+                    return;
+                }
+
+                // 模拟批量导出操作
+                alert(`批量导出 ${selectedIds.length} 条记录成功`);
+            });
+
+            // 全选按钮点击
+            $('#selectAllBtn').on('click', function() {
+                const isChecked = $('#selectAll').prop('checked');
+                $('#selectAll').prop('checked', !isChecked);
+                $('#selectAll').trigger('change');
+            });
+        });
+
+        // 更新批量操作按钮状态
+        function updateBatchButtons() {
+            const selectedCount = $('.record-checkbox:checked').length;
+            $('#batchDeleteBtn').prop('disabled', selectedCount === 0);
+            $('#batchExportBtn').prop('disabled', selectedCount === 0);
+        }
+
+        // 获取选中的记录ID
+        function getSelectedIds() {
+            const ids = [];
+            $('.record-checkbox:checked').each(function() {
+                ids.push($(this).data('id'));
+            });
+            return ids;
+        }
+
+        // 日期范围筛选
+        function filterRecords() {
+            const startDate = document.getElementById('filter-start-date').value;
+            const endDate = document.getElementById('filter-end-date').value;
+
+            if (!startDate || !endDate) {
+                alert('请选择开始和结束日期');
+                return;
+            }
+
+            if (new Date(startDate) > new Date(endDate)) {
+                alert('开始日期不能晚于结束日期');
+                return;
+            }
+
+            // 模拟筛选操作
+            alert(`筛选 ${startDate} 至 ${endDate} 的记录`);
+            fetchHealthRecords();
+        }
+
+        // 个人信息功能
+        function showProfile() {
+            if (checkAuth()) {
+                alert('个人信息功能');
+                // window.location.href = '/profile';
+            }
+        }
+
+        // 退出登录
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('userId');
+                window.location.href = "/";
+            }
+        }
+
+        function exportCsvViaBackend(id) {
+            if (!checkAuth()) return;
+
+            axios.get(`/档案管理/export/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                responseType: 'arraybuffer'
+            })
+                .then(response => {
+                    const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+
+                    // 从响应头中获取并解析文件名
+                    const contentDisposition = response.headers['content-disposition'];
+                    const filenameMatch = contentDisposition.match(/filename\*=UTF-8''(.+)/);
+                    const filename = filenameMatch ? decodeURIComponent(filenameMatch[1]) : `健康档案_${id}.csv`;
+
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+                })
+                .catch(error => {
+                    console.error('导出失败:', error);
+                    alert('导出失败: ' + (error.response?.data?.message || '服务器错误'));
+                });
+        }
+
+        // 绑定导出按钮事件，只调用后端导出方法
+        $(document).on('click', '.export-button', function () {
+            exportCsvViaBackend($(this).data('id'));
+        });
+
+        // 导出CSV文件
+        function exportCsv(record) {
+            const headers = ['记录编号', '记录时间', '身高(cm)', '体重(kg)',
+                '收缩压(mmHg)', '舒张压(mmHg)', '心率(次/分)',
+                '血糖(mmol/L)', '体温(°C)', '备注'];
+            const data = [
+                record.id,
+                formatDate(record.recordDate),
+                record.height || '-',
+                record.weight || '-',
+                record.systolicBloodPressure || '-',
+                record.diastolicBloodPressure || '-',
+                record.heartRate || '-',
+                record.bloodSugar || '-',
+                record.bodyTemperature || '-',
+                record.note || '-'
+            ];
+
+            const csvContent = "data:text/csv;charset=utf-8," +
+                headers.join(',') + "\n" +
+                data.join(',');
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `健康档案_${record.id}_${new Date().getTime()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+        }
+
+        // 绑定导出按钮事件
+        $(document).on('click', '.export-button', function () {
+            const recordId = $(this).data('id');
+            viewRecordDetails(recordId).then(record => { // 复用现有获取详情逻辑
+                exportCsv(record);
+            }).catch(error => {
+                console.error('导出失败:', error);
+                alert('导出失败: ' + error.message);
+            });
+        });
+
+        // 修复viewRecordDetails函数，确保正确处理日期
+        function viewRecordDetails(id) {
+            return new Promise((resolve, reject) => {
+                if (!checkAuth()) return reject('未登录');
+
+                axios.get(`/档案管理/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                })
+                    .then(response => {
+                        const record = response.data;
+
+                        // 确保日期字段被正确格式化后再显示
+                        document.getElementById('view-recordDate').textContent = formatDate(record.recordDate);
+
+                        // 其他字段设置...
+                        resolve(record);
+                    })
+                    .catch(error => {
+                        reject(error);
+                    });
+            });
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+<header class="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="flex items-center justify-between h-16">
+            <div class="flex items-center space-x-8">
+                <a href="/" class="text-2xl font-bold text-primary">乐龄生活</a>
+                <nav class="hidden md:flex space-x-8">
+                    <a href="#" class="text-gray-600 hover:text-primary">首页</a>
+                    <a href="日常购物.html" class="text-gray-600 hover:text-primary">生活服务</a>
+                    <a href="/健康档案管理" class="text-primary">健康管理</a>
+                    <a href="#" class="text-gray-600 hover:text-primary">社交娱乐</a>
+                    <a href="#" class="text-gray-600 hover:text-primary">防诈骗提醒</a>
+                    <a href="#" class="text-gray-600 hover:text-primary">信息管理</a>
+                </nav>
+            </div>
+
+            <div class="flex items-center space-x-6">
+                <div class="relative">
+                    <input type="text" placeholder="搜索商品" class="w-48 pl-10 pr-4 py-2 text-sm border rounded-button focus:outline-none focus:border-primary">
+                    <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <div class="relative">
+                    <i class="ri-shopping-cart-line text-gray-600 text-xl"></i>
+                    <span class="absolute -top-2 -right-2 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">2</span>
+                </div>
+                <div class="relative">
+                    <div id="avatar-menu" class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer">
+                        <i class="ri-user-line text-gray-600"></i>
+                    </div>
+                    <!-- 头像下拉菜单 -->
+                    <div id="avatar-dropdown" class="hidden absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onclick="showProfile()">
+                            <i class="ri-user-line mr-2"></i>个人信息
+                        </a>
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onclick="logout()">
+                            <i class="ri-logout-box-r-line mr-2"></i>退出登录
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 pt-24 pb-12">
+    <div class="flex gap-8">
+        <!-- 左侧导航 -->
+        <div class="w-64 bg-white rounded-lg shadow-sm p-4">
+            <h2 class="text-lg font-medium mb-4">健康档案管理</h2>
+            <nav class="space-y-1">
+                <a href="健康数据录入.html" class="nav-item flex items-center px-4 py-3 text-gray-600 rounded-lg">
+                    <i class="ri-file-edit-line mr-3"></i>
+                    <span>健康数据录入</span>
+                </a>
+                <a href="#" class="nav-item flex items-center px-4 py-3 text-primary bg-primary/5 rounded-lg">
+                    <i class="ri-folder-open-line mr-3"></i>
+                    <span>健康数据管理</span>
+                </a>
+                <a href="健康趋势分析.html" class="nav-item flex items-center px-4 py-3 text-gray-600 rounded-lg">
+                    <i class="ri-line-chart-line mr-3"></i>
+                    <span>健康趋势分析</span>
+                </a>
+                <a href="风险健康评估.html" class="nav-item flex items-center px-4 py-3 text-gray-600 rounded-lg">
+                    <i class="ri-clipboard-line mr-3"></i>
+                    <span>风险健康评估</span>
+                </a>
+                <a href="在线咨询.html" class="nav-item flex items-center px-4 py-3 text-gray-600 rounded-lg">
+                    <i class="ri-message-2-line mr-3"></i>
+                    <span>在线咨询</span>
+                </a>
+                <a href="健康资讯推送.html" class="nav-item flex items-center px-4 py-3 text-gray-600 rounded-lg">
+                    <i class="ri-newspaper-line mr-3"></i>
+                    <span>健康资讯推送</span>
+                </a>
+            </nav>
+        </div>
+        <!-- 右侧档案列表 -->
+        <div class="flex-1 bg-white rounded-lg shadow-sm p-6">
+            <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                <h1 class="text-xl font-medium">档案管理</h1>
+                <div class="flex flex-wrap items-center space-x-4 gap-2">
+                    <div class="relative">
+                        <input type="text" placeholder="搜索档案" class="w-64 pl-10 pr-4 py-2 text-sm border rounded-button focus:outline-none focus:border-primary search-input">
+                        <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="date" id="filter-start-date" class="px-3 py-2 text-sm border rounded-button focus:outline-none focus:border-primary">
+                        <span class="text-gray-400">至</span>
+                        <input type="date" id="filter-end-date" class="px-3 py-2 text-sm border rounded-button focus:outline-none focus:border-primary">
+                        <button onclick="filterRecords()" class="px-3 py-2 bg-secondary text-white rounded-button hover:bg-secondary/90 transition-colors">
+                            <i class="ri-filter-3-line mr-1"></i>筛选
+                        </button>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button id="selectAllBtn" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-button hover:bg-gray-300 transition-colors">
+                            <i class="ri-checkbox-circle-line mr-1"></i>全选
+                        </button>
+                        <button id="batchDeleteBtn" class="px-3 py-2 bg-red-500 text-white rounded-button hover:bg-red-600 transition-colors disabled:opacity-50" disabled>
+                            <i class="ri-delete-bin-line mr-1"></i>批量删除
+                        </button>
+                        <button id="batchExportBtn" class="px-3 py-2 bg-blue-500 text-white rounded-button hover:bg-blue-600 transition-colors disabled:opacity-50" disabled>
+                            <i class="ri-export-line mr-1"></i>批量导出
+                        </button>
+                    </div>
+                    <button class="px-4 py-2 bg-primary text-white rounded-button hover:bg-primary/90 transition-colors whitespace-nowrap new-record-button">
+                        <i class="ri-add-line mr-2"></i>新建数据
+                    </button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                    <tr class="bg-gray-50">
+                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">
+                            <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        </th>
+                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">编号</th>
+                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">记录时间</th>
+                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">身高(cm)</th>
+                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">体重(kg)</th>
+                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">血压(mmHg)</th>
+                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">心率(次/分)</th>
+                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">血糖(mmol/L)</th>
+                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">体温(°C)</th>
+                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">备注</th>
+                        <th class="py-3 px-4 text-left text-sm font-medium text-gray-500">操作</th>
+                    </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+
+            <div class="mt-6 flex items-center justify-between">
+                <div class="text-sm text-gray-500 total-records">
+                    共 0 条记录
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button class="px-3 py-1 border rounded-button text-gray-600 hover:bg-gray-50 disabled:opacity-50 prev-page" disabled>
+                        <i class="ri-arrow-left-s-line"></i> 上一页
+                    </button>
+
+                    <!-- 页码容器 -->
+                    <div class="flex space-x-1 page-numbers">
+                        <!-- 页码将通过JS动态生成 -->
+                    </div>
+
+                    <button class="px-3 py-1 border rounded-button text-gray-600 hover:bg-gray-50 disabled:opacity-50 next-page">
+                        下一页 <i class="ri-arrow-right-s-line"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查看健康档案模态框 -->
+    <div class="modal fade fixed top-0 left-0 hidden w-full h-full outline-none overflow-x-hidden overflow-y-auto" id="viewRecordModal" tabindex="-1" aria-labelledby="viewRecordModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg relative w-auto pointer-events-none">
+            <div class="modal-content border-none shadow-lg relative flex flex-col w-full pointer-events-auto bg-white bg-clip-padding rounded-md outline-none text-current">
+                <div class="modal-header flex flex-shrink-0 items-center justify-between p-4 border-b border-gray-200 rounded-t-md">
+                    <h5 class="text-xl font-medium leading-normal text-gray-800" id="viewRecordModalLabel">健康档案详情</h5>
+                    <button type="button" class="btn-close box-content w-4 h-4 p-1 text-black border-none rounded-none opacity-50 focus:shadow-none focus:outline-none focus:opacity-100 hover:text-black hover:opacity-75 hover:no-underline" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body p-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">记录编号</label>
+                            <div class="text-sm text-gray-900" id="view-id">-</div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">记录时间</label>
+                            <div class="text-sm text-gray-900" id="view-recordDate">-</div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">身高(cm)</label>
+                            <div class="text-sm text-gray-900" id="view-height">-</div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">体重(kg)</label>
+                            <div class="text-sm text-gray-900" id="view-weight">-</div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">血压(mmHg)</label>
+                            <div class="text-sm text-gray-900" id="view-systolic">-</div>
+                            <div class="text-sm text-gray-900" id="view-diastolic" style="display: inline;">-</div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">心率(次/分)</label>
+                            <div class="text-sm text-gray-900" id="view-heartRate">-</div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">血糖(mmol/L)</label>
+                            <div class="text-sm text-gray-900" id="view-bloodSugar">-</div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">体温(°C)</label>
+                            <div class="text-sm text-gray-900" id="view-temperature">-</div>
+                        </div>
+                        <div class="mb-4 col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
+                            <div class="text-sm text-gray-900" id="view-note">-</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer flex flex-shrink-0 flex-wrap items-center justify-end p-4 border-t border-gray-200 rounded-b-md">
+                    <button type="button" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-button hover:bg-gray-300 transition-colors mr-2" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑健康档案模态框 -->
+    <div class="modal fade fixed top-0 left-0 hidden w-full h-full outline-none overflow-x-hidden overflow-y-auto" id="editRecordModal" tabindex="-1" aria-labelledby="editRecordModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg relative w-auto pointer-events-none">
+            <div class="modal-content border-none shadow-lg relative flex flex-col w-full pointer-events-auto bg-white bg-clip-padding rounded-md outline-none text-current">
+                <div class="modal-header flex flex-shrink-0 items-center justify-between p-4 border-b border-gray-200 rounded-t-md">
+                    <h5 class="text-xl font-medium leading-normal text-gray-800" id="editRecordModalLabel">编辑健康档案</h5>
+                    <button type="button" class="btn-close box-content w-4 h-4 p-1 text-black border-none rounded-none opacity-50 focus:shadow-none focus:outline-none focus:opacity-100 hover:text-black hover:opacity-75 hover:no-underline" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body p-6">
+                    <input type="hidden" id="edit-id">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="mb-4">
+                            <label for="edit-height" class="block text-sm font-medium text-gray-700 mb-1">身高(cm)</label>
+                            <input type="number" id="edit-height" class="w-full px-3 py-2 text-sm border rounded-button focus:outline-none focus:border-primary">
+                        </div>
+                        <div class="mb-4">
+                            <label for="edit-weight" class="block text-sm font-medium text-gray-700 mb-1">体重(kg)</label>
+                            <input type="number" id="edit-weight" class="w-full px-3 py-2 text-sm border rounded-button focus:outline-none focus:border-primary">
+                        </div>
+                        <div class="mb-4">
+                            <label for="edit-systolic" class="block text-sm font-medium text-gray-700 mb-1">收缩压(mmHg)</label>
+                            <input type="number" id="edit-systolic" class="w-full px-3 py-2 text-sm border rounded-button focus:outline-none focus:border-primary">
+                        </div>
+                        <div class="mb-4">
+                            <label for="edit-diastolic" class="block text-sm font-medium text-gray-700 mb-1">舒张压(mmHg)</label>
+                            <input type="number" id="edit-diastolic" class="w-full px-3 py-2 text-sm border rounded-button focus:outline-none focus:border-primary">
+                        </div>
+                        <div class="mb-4">
+                            <label for="edit-heartRate" class="block text-sm font-medium text-gray-700 mb-1">心率(次/分)</label>
+                            <input type="number" id="edit-heartRate" class="w-full px-3 py-2 text-sm border rounded-button focus:outline-none focus:border-primary">
+                        </div>
+                        <div class="mb-4">
+                            <label for="edit-bloodSugar" class="block text-sm font-medium text-gray-700 mb-1">血糖(mmol/L)</label>
+                            <input type="number" step="0.1" id="edit-bloodSugar" class="w-full px-3 py-2 text-sm border rounded-button focus:outline-none focus:border-primary">
+                        </div>
+                        <div class="mb-4">
+                            <label for="edit-temperature" class="block text-sm font-medium text-gray-700 mb-1">体温(°C)</label>
+                            <input type="number" step="0.1" id="edit-temperature" class="w-full px-3 py-2 text-sm border rounded-button focus:outline-none focus:border-primary">
+                        </div>
+                        <div class="mb-4 col-span-2">
+                            <label for="edit-note" class="block text-sm font-medium text-gray-700 mb-1">备注</label>
+                            <textarea id="edit-note" rows="3" class="w-full px-3 py-2 text-sm border rounded-button focus:outline-none focus:border-primary"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer flex flex-shrink-0 flex-wrap items-center justify-end p-4 border-t border-gray-200 rounded-b-md">
+                    <button type="button" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-button hover:bg-gray-300 transition-colors mr-2" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="px-4 py-2 bg-primary text-white rounded-button hover:bg-primary/90 transition-colors" onclick="submitEditForm()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

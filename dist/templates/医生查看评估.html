@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康风险评估 - 医生版 | 乐龄生活</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+    <!-- 添加 KindEditor 的 CDN -->
+    <link rel="stylesheet" href="/static/kindeditor-master/themes/default/default.css">
+    <script src="/static/kindeditor-master/kindeditor-all-min.js"></script>
+    <script src="/static/kindeditor-master/lang/zh-CN.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7AA968',
+                        secondary: '#F4A460',
+                        error: '#ef4444'
+                    },
+                    borderRadius: {
+                        'none': '0px',
+                        'sm': '4px',
+                        DEFAULT: '8px',
+                        'md': '12px',
+                        'lg': '16px',
+                        'xl': '20px',
+                        '2xl': '24px',
+                        '3xl': '32px',
+                        'full': '9999px',
+                        'button': '8px'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            min-height: 1024px;
+            background-color: #F8F9FA;
+        }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .error-message {
+            color: #f5222d;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .nav-item {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: #6B8E51;
+            font-weight: 500;
+        }
+
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #6B8E51;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .menu-item:hover {
+            background-color: rgba(107, 142, 81, 0.1);
+        }
+
+        .menu-item.active {
+            background-color: rgba(107, 142, 81, 0.1);
+            color: #6B8E51;
+            font-weight: 500;
+        }
+
+        .risk-card {
+            transition: all 0.3s;
+        }
+        .risk-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        /* 图表容器样式 */
+        .chart-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        /* 风险等级标签 */
+        .risk-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .risk-low {
+            background-color: #E6F7E0;
+            color: #52C41A;
+        }
+        .risk-medium {
+            background-color: #FFF7E6;
+            color: #FA8C16;
+        }
+        .risk-high {
+            background-color: #FFECE6;
+            color: #F5222D;
+        }
+
+        /* 主要按钮样式 */
+        .bg-primary {
+            background-color: #6B8E51;
+        }
+        .text-primary {
+            color: #6B8E51;
+        }
+        .border-primary {
+            border-color: #6B8E51;
+        }
+
+        /* 按钮基础样式 */
+        .rounded-button {
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        /* 悬停效果 - 移除或简化 */
+        .bg-primary:hover {
+            background-color: #6B8E51;
+        }
+        .border-primary:hover {
+            background-color: #6B8E51;
+            color: white;
+        }
+
+        /* 头像下拉菜单样式 */
+        .avatar-dropdown {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+            width: 160px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 100;
+            display: none;
+        }
+        .avatar-dropdown.show {
+            display: block;
+        }
+        .avatar-dropdown-item {
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .avatar-dropdown-item:hover {
+            background-color: #f5f5f5;
+        }
+        .avatar-dropdown-item i {
+            margin-right: 8px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* 富文本编辑器样式 */
+        .ke-toolbar {
+            background: #f9fafb !important;
+        }
+
+        .editor-container {
+            min-height: 200px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            padding: 10px;
+        }
+
+        /* KindEditor 样式调整 */
+        .ke-container {
+            border-radius: 8px !important;
+            border: 1px solid #d1d5db !important;
+        }
+    </style>
+</head>
+
+<body>
+<header class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
+    <nav class="container mx-auto px-4 h-16 flex items-center">
+        <div class="flex items-center space-x-8">
+            <a href="/" class="text-2xl font-['Pacifico'] text-primary">乐龄生活</a>
+            <div class="hidden lg:flex space-x-6">
+                <a href="/" class="nav-link text-gray-600 hover:text-primary transition-colors">首页</a>
+                <div class="dropdown relative">
+                    <a href="#" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">健康管理</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">健康档案管理</a>
+                        <a href="/健康资讯" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">健康资讯</a>
+                    </div>
+                </div>
+                <div class="dropdown relative">
+                    <a href="#" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">我的工作台</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="/doctor/dashboard" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">工作台</a>
+                        <a href="/doctor/appointments" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">预约管理</a>
+                        <a href="医生问诊.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">在线咨询</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<div class="w-[1440px] mx-auto pt-16">
+    <main class="flex min-h-[calc(100vh-64px)]">
+        <aside class="w-64 bg-white border-r p-4">
+            <div class="text-lg font-medium mb-4">医生工作台</div>
+            <div class="space-y-1">
+                <a href="/doctor/dashboard" class="menu-item">
+                    <i class="fas fa-tachometer-alt mr-3 text-gray-400"></i>
+                    <span>工作台</span>
+                </a>
+                <a href="/doctor/appointments" class="menu-item">
+                    <i class="fas fa-calendar-check mr-3 text-gray-400"></i>
+                    <span>预约管理</span>
+                </a>
+                <a href="医生问诊.html" class="menu-item">
+                    <i class="fas fa-comments mr-3 text-gray-400"></i>
+                    <span>在线咨询</span>
+                </a>
+            </div>
+        </aside>
+
+        <div class="flex-1 p-8">
+            <div class="mb-8">
+                <h1 class="text-2xl font-medium mb-2">老人健康风险评估报告</h1>
+                <p class="text-gray-500">查看和管理老人的健康风险评估报告</p>
+
+                <!-- 老人选择和日期选择区域 -->
+                <div class="mt-6 bg-white p-4 rounded-lg shadow-sm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="patientSelect" class="block text-sm font-medium text-gray-700 mb-1">选择老人:</label>
+                            <select id="patientSelect" class="w-full px-3 py-2 border border-gray-300 rounded-button focus:outline-none focus:border-primary">
+                                <option value="">-- 请选择老人 --</option>
+                                <!-- 老人选项将通过JavaScript动态加载 -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="datepicker" class="block text-sm font-medium text-gray-700 mb-1">选择日期:</label>
+                            <div class="flex space-x-2">
+                                <select id="datepicker" class="flex-1 px-3 py-2 border border-gray-300 rounded-button focus:outline-none focus:border-primary" disabled>
+                                    <option value="">-- 请先选择老人 --</option>
+                                </select>
+                                <button id="confirmDateBtn" class="px-4 py-2 bg-primary text-white hover:bg-primary/90 transition-colors duration-300 rounded-button whitespace-nowrap" disabled>
+                                    <i class="fas fa-check mr-1"></i>确定
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 报告操作按钮 -->
+                <div class="mt-4 flex items-center space-x-4">
+                    <button id="generateReportBtn" class="px-6 py-2 bg-primary text-white hover:bg-primary/90 transition-colors duration-300 rounded-button whitespace-nowrap">
+                        <i class="fas fa-file-medical mr-2"></i>生成报告
+                    </button>
+                    <button id="viewHistoryBtn" class="px-6 py-2 border border-primary text-primary hover:bg-primary hover:text-white transition-colors duration-300 rounded-button whitespace-nowrap">
+                        <i class="fas fa-history mr-2"></i>查看历史报告
+                    </button>
+                    <button id="downloadReportBtn" class="px-6 py-2 border border-primary text-primary hover:bg-primary hover:text-white transition-colors duration-300 rounded-button whitespace-nowrap">
+                        <i class="fas fa-download mr-2"></i>下载报告
+                    </button>
+                </div>
+            </div>
+
+            <!-- 老人基本信息卡片 -->
+            <div class="bg-white p-6 rounded-lg shadow-sm mb-6 hidden" id="patientInfoCard">
+                <div class="flex items-center space-x-4">
+                    <div class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
+                        <i class="fas fa-user text-2xl text-gray-500"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-medium" id="patientName">--</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+                            <div>
+                                <p class="text-sm text-gray-500">性别</p>
+                                <p class="font-medium" id="patientGender">--</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">年龄</p>
+                                <p class="font-medium" id="patientAge">--</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">联系电话</p>
+                                <p class="font-medium" id="patientPhone">--</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">最近评估</p>
+                                <p class="font-medium" id="lastAssessment">--</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 当前报告显示区域 -->
+            <div class="bg-white p-6 rounded-lg mb-8 hidden" id="currentReportSection">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium">健康风险评估报告</h3>
+                    <div class="text-sm text-gray-500" id="reportDate"></div>
+                </div>
+
+                <!-- 风险等级显示 -->
+                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="flex-1">
+                            <h4 class="font-medium">总体健康风险等级</h4>
+                            <div class="mt-2">
+                                <span class="risk-tag" id="riskLevelTag">未评估</span>
+                                <span class="text-gray-600 ml-2" id="riskDescription"></span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-500">评估时间</div>
+                            <div class="text-sm font-medium" id="assessmentTime"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 健康评估区域 -->
+                <div class="space-y-6 mb-6" id="healthAssessmentSection">
+                    <!-- 动态生成的评估内容会放在这里 -->
+                </div>
+
+                <!-- 健康建议区域 -->
+                <div class="mt-8 p-6 bg-blue-50 rounded-lg border border-blue-100">
+                    <h4 class="font-medium text-lg text-blue-800 mb-4">
+                        <i class="fas fa-lightbulb mr-2"></i>健康建议
+                    </h4>
+                    <div id="generalHealthAdvice">
+                        <!-- 通用健康建议将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 历史报告区域 -->
+            <div class="bg-white p-6 rounded-lg mb-8 hidden" id="historyReportSection">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium">历史风险评估报告</h3>
+                    <button id="clearHistoryBtn" class="px-4 py-2 bg-red-500 text-white hover:bg-red-600 transition-colors duration-300 rounded-button whitespace-nowrap">
+                        <i class="fas fa-trash-alt mr-2"></i>清空历史记录
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">记录日期</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">评估日期</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">风险等级</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">主要问题</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="historyReportList">
+                        <!-- 历史报告数据将通过JavaScript动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 医生备注区域 -->
+            <div class="bg-white p-6 rounded-lg mb-8 hidden" id="doctorNotesSection">
+                <h3 class="text-lg font-medium mb-4">
+                    <i class="fas fa-notes-medical mr-2 text-primary"></i>医生备注
+                </h3>
+                <textarea id="editorContainer" class="editor-container" style="width:100%;height:300px;"></textarea>
+                <div class="flex justify-end mt-2">
+                    <button id="saveNotesBtn" class="px-6 py-2 bg-primary text-white hover:bg-primary/90 transition-colors duration-300 rounded-button whitespace-nowrap">
+                        <i class="fas fa-save mr-2"></i>保存备注
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // 替换为 KindEditor 相关代码
+    let editor;
+
+    /**
+     * 初始化富文本编辑器
+     * @param {string} content - 编辑器初始内容，默认为空字符串
+     * @returns {KindEditor} 初始化后的编辑器实例
+     */
+    function initEditor(content = '') {
+        // 销毁现有编辑器实例，防止重复初始化
+        destroyEditor();
+
+        // 创建新的编辑器实例
+        editor = KindEditor.create('#editorContainer', {
+            width: '100%',
+            height: '300px',
+            themeType: 'default',
+            langType: 'zh-CN',
+
+            // 配置编辑器顶部工具条按钮
+            items: [
+                'source', '|', 'undo', 'redo', '|', 'preview', 'print', 'template', 'code', 'cut', 'copy', 'paste',
+                'plainpaste', 'wordpaste', '|', 'justifyleft', 'justifycenter', 'justifyright',
+                'justifyfull', 'insertorderedlist', 'insertunorderedlist', 'indent', 'outdent', 'subscript',
+                'superscript', 'clearhtml', 'quickformat', 'selectall', '|', 'fullscreen', '/',
+                'formatblock', 'fontname', 'fontsize', '|', 'forecolor', 'hilitecolor', 'bold',
+                'italic', 'underline', 'strikethrough', 'lineheight', 'removeformat', '|', 'image',
+                'multiimage', 'flash', 'media', 'insertfile', 'table', 'hr', 'emoticons', 'baidumap', 'pagebreak',
+                'anchor', 'link', 'unlink', '|', 'about'
+            ],
+
+            // 文件上传配置
+            uploadJson: '/api/file',          // 后端上传接口URL
+            filePostName: 'imgFile',          // 表单文件参数名
+            dir: 'image',                     // 默认上传目录
+
+            // 内容变化时的回调函数
+            afterChange: function() {
+                // 可在此处添加内容变化时的处理逻辑
+            },
+
+            // 文件上传后的回调函数
+            afterUpload: function(data) {
+                if (data.error !== 0) {
+                    alert('上传失败: ' + data.message);
+                }
+            }
+        });
+
+        // 延迟设置编辑器内容，确保编辑器完全初始化
+        setTimeout(() => {
+            if (editor) {
+                editor.html(content || '');  // 设置编辑器初始内容
+            }
+        }, 300);
+
+        return editor;
+    }
+
+    function getEditorContent() {
+        return editor ? editor.html() : '';
+    }
+
+    function destroyEditor() {
+        if (editor) {
+            try {
+                KindEditor.remove('#editorContainer');
+            } catch (e) {
+                console.warn('Error destroying editor:', e);
+            }
+            editor = null;
+        }
+    }
+
+    // 封装 API 调用的函数
+    const apiClient = {
+        baseUrl: '/医生查看评估',
+        token: localStorage.getItem('token') || 'mock_token',
+        maxRetries: 3,
+
+        async fetchWithAuth(url, options = {}) {
+            const headers = {
+                'Authorization': `Bearer ${this.token}`,
+                'Accept': 'application/json',
+                ...(options.headers || {})
+            };
+
+            // 如果是POST/PUT请求且没有指定Content-Type，默认使用JSON
+            if (['POST', 'PUT', 'PATCH'].includes(options.method?.toUpperCase())) {
+                headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+            }
+
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers
+                });
+
+                if (!response.ok) {
+                    let errorData;
+                    try {
+                        errorData = await response.json();
+                    } catch {
+                        errorData = { message: await response.text() };
+                    }
+                    throw new Error(errorData.message || `请求失败: ${response.status}`);
+                }
+
+                // 处理204 No Content响应
+                if (response.status === 204) {
+                    return null;
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API请求失败:', error);
+                throw error;
+            }
+        },
+
+        async fetchPatients() {
+            return this.fetchWithAuth(`${this.baseUrl}/patients`);
+        },
+
+        async fetchPatientDetails(patientId) {
+            return this.fetchWithAuth(`${this.baseUrl}/patients/${patientId}`);
+        },
+
+        async fetchAvailableDates(patientId) {
+            return this.fetchWithAuth(`${this.baseUrl}/dates?patientId=${patientId}`);
+        },
+
+        async generateHealthReport(patientId, recordDate, healthData) {
+            try {
+                const formattedRecordDate = formatDate(recordDate);
+                const requestData = {
+                    user_id: parseInt(patientId),
+                    recordDate: formattedRecordDate,
+                    health_data: {
+                        systolicBloodPressure: parseFloat(healthData.systolicBloodPressure) || 0,
+                        diastolicBloodPressure: parseFloat(healthData.diastolicBloodPressure) || 0,
+                        bloodSugar: parseFloat(healthData.bloodSugar) || 0,
+                        weight: parseFloat(healthData.weight) || 0,
+                        height: parseFloat(healthData.height) || 0
+                    }
+                };
+
+                const response = await this.fetchWithAuth(`${this.baseUrl}/generate`, {
+                    method: 'POST',
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response) {
+                    throw new Error('Empty response from server');
+                }
+
+                return response;
+            } catch (error) {
+                console.error('生成报告失败:', error);
+                throw new Error(`生成报告失败: ${error.message}`);
+            }
+        },
+
+        async getHealthRecordByDate(patientId, date) {
+            return this.fetchWithAuth(`${this.baseUrl}/health-records?patientId=${patientId}&date=${date}`);
+        },
+
+        async getHealthHistory(patientId) {
+            return this.fetchWithAuth(`${this.baseUrl}/history?patientId=${patientId}`);
+        },
+
+        async getReportDetail(reportId) {
+            return this.fetchWithAuth(`${this.baseUrl}/detail?id=${reportId}`);
+        },
+
+        async deleteReport(reportId, patientId) {
+            return this.fetchWithAuth(`${this.baseUrl}/detail?id=${reportId}&patientId=${patientId}`, {
+                method: 'DELETE'
+            });
+        },
+
+        async clearHistory(patientId) {
+            return this.fetchWithAuth(`${this.baseUrl}/clear-history?patientId=${patientId}`, {
+                method: 'DELETE'
+            });
+        },
+
+        async saveDoctorNotes(reportId, notes) {
+            return this.fetchWithAuth(`${this.baseUrl}/notes`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    reportId: reportId,
+                    notes: notes
+                })
+            });
+        },
+
+        async downloadReport(reportId, patientId) {
+            try {
+                const url = `${this.baseUrl}/download?id=${reportId}&patientId=${patientId}`;
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${this.token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`下载报告失败，状态码: ${response.status}`);
+                }
+
+                return await response.blob();
+            } catch (error) {
+                console.error('下载报告失败:', error);
+                throw error;
+            }
+        }
+    };
+
+    // 工具函数
+    function showError(message) {
+        const errorAlert = document.getElementById('errorAlert');
+        const errorMessage = document.getElementById('errorMessage');
+
+        if (errorAlert && errorMessage) {
+            errorMessage.textContent = message;
+            errorAlert.classList.remove('hidden');
+            setTimeout(() => errorAlert.classList.add('hidden'), 5000);
+        } else {
+            alert(message);
+        }
+    }
+
+    function showSuccess(message) {
+        const successAlert = document.createElement('div');
+        successAlert.className = 'fixed top-20 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded';
+        successAlert.innerHTML = `
+        <span class="font-bold">成功!</span>
+        <span>${message}</span>
+        <span class="absolute top-0 bottom-0 right-0 px-4 py-3" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </span>
+    `;
+        document.body.appendChild(successAlert);
+        setTimeout(() => successAlert.remove(), 3000);
+    }
+
+    function formatDate(date) {
+        const dateObj = new Date(date);
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function setButtonLoading(button, isLoading) {
+        if (isLoading) {
+            button.innerHTML = '<span class="loading-spinner"></span> ' + button.textContent.trim();
+            button.disabled = true;
+        } else {
+            const icon = button.id.includes('generate') ? 'fa-file-medical' :
+                button.id.includes('history') ? 'fa-history' :
+                    button.id.includes('confirm') ? 'fa-check' :
+                        button.id.includes('download') ? 'fa-download' :
+                            button.id.includes('save') ? 'fa-save' : '';
+            button.innerHTML = icon ? `<i class="fas ${icon} mr-2"></i>${button.textContent.trim()}` : button.textContent;
+            button.disabled = false;
+        }
+    }
+
+    function showProfile() {
+        window.location.href = '/doctor/profile';
+    }
+
+    function logout() {
+        if (confirm('确定要退出登录吗？')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userId');
+            window.location.href = "/登录";
+        }
+    }
+
+    async function downloadReport(reportId) {
+        if (!reportId || !currentPatientId) {
+            showError('请先选择报告和老人');
+            return;
+        }
+
+        try {
+            const downloadReportBtn = document.getElementById('downloadReportBtn');
+            setButtonLoading(downloadReportBtn, true);
+
+            // Use the correct endpoint with both parameters
+            const url = `/医生查看评估/download/${reportId}?patientId=${currentPatientId}`;
+
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`下载失败: ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const urlBlob = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = urlBlob;
+            a.download = `健康报告_${reportId}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(urlBlob);
+            a.remove();
+
+        } catch (error) {
+            showError('下载报告失败: ' + error.message);
+        } finally {
+            setButtonLoading(downloadReportBtn, false);
+        }
+    }
+
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', function () {
+        const patientSelect = document.getElementById('patientSelect');
+        const datepicker = document.getElementById('datepicker');
+        const confirmDateBtn = document.getElementById('confirmDateBtn');
+        const generateReportBtn = document.getElementById('generateReportBtn');
+        const viewHistoryBtn = document.getElementById('viewHistoryBtn');
+        const patientInfoCard = document.getElementById('patientInfoCard');
+        const currentReportSection = document.getElementById('currentReportSection');
+        const historyReportSection = document.getElementById('historyReportSection');
+        const doctorNotesSection = document.getElementById('doctorNotesSection');
+        const reportDate = document.getElementById('reportDate');
+        const riskLevelTag = document.getElementById('riskLevelTag');
+        const riskDescription = document.getElementById('riskDescription');
+        const assessmentTime = document.getElementById('assessmentTime');
+        const healthAssessmentSection = document.getElementById('healthAssessmentSection');
+        const generalHealthAdvice = document.getElementById('generalHealthAdvice');
+        const historyReportList = document.getElementById('historyReportList');
+        const downloadReportBtn = document.getElementById('downloadReportBtn');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const saveNotesBtn = document.getElementById('saveNotesBtn');
+
+        // 老人信息元素
+        const patientName = document.getElementById('patientName');
+        const patientGender = document.getElementById('patientGender');
+        const patientAge = document.getElementById('patientAge');
+        const patientPhone = document.getElementById('patientPhone');
+        const lastAssessment = document.getElementById('lastAssessment');
+
+        let currentPatientId = null;
+        let currentReportId = null;
+
+        init();
+
+        async function init() {
+            setupEventListeners();
+            await fetchPatients();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('avatarBtn')?.addEventListener('click', toggleAvatarDropdown);
+
+            patientSelect.addEventListener('change', onPatientSelectChange);
+            confirmDateBtn.addEventListener('click', checkAndViewReport);
+            generateReportBtn.addEventListener('click', generateReport);
+            viewHistoryBtn.addEventListener('click', viewHistoryReports);
+            downloadReportBtn.addEventListener('click', () => downloadReport(currentReportId));
+            clearHistoryBtn.addEventListener('click', clearHistoryReports);
+            saveNotesBtn.addEventListener('click', saveNotes);
+
+            // 修改页面卸载事件
+            window.addEventListener('beforeunload', destroyEditor);
+        }
+
+        function toggleAvatarDropdown(e) {
+            e.stopPropagation();
+            const dropdown = e.target.closest('button').nextElementSibling;
+            dropdown?.classList.toggle('show');
+        }
+
+        async function fetchPatients() {
+            try {
+                const response = await apiClient.fetchWithAuth(`${apiClient.baseUrl}/patients`, { method: 'GET' });
+                if (response && response.success && response.data) {
+                    populatePatientDropdown(response.data);
+                } else {
+                    showError('获取老人列表失败: ' + (response?.message || '未知错误'));
+                }
+            } catch (error) {
+                showError('获取老人列表失败: ' + error.message);
+            }
+        }
+
+        function populatePatientDropdown(patients) {
+            if (!Array.isArray(patients)) {
+                showError('获取老人列表失败: 数据不是有效的数组');
+                return;
+            }
+            patientSelect.innerHTML = '<option value="">-- 请选择老人 --</option>';
+            patients.forEach(patient => {
+                const option = document.createElement('option');
+                option.value = patient.id;
+
+                // 修复性别判断：直接使用数据库的中文值
+                const genderText = patient.gender === '男' ? '男' : (patient.gender === '女' ? '女' : '未知');
+                option.textContent = `${patient.name} (${genderText}, ${patient.age}岁)`;
+
+                patientSelect.appendChild(option);
+            });
+        }
+
+        async function onPatientSelectChange() {
+            currentPatientId = patientSelect.value;
+            if (!currentPatientId) {
+                datepicker.innerHTML = '<option value="">-- 请选择老人 --</option>';
+                datepicker.disabled = true;
+                confirmDateBtn.disabled = true;
+                generateReportBtn.disabled = true;
+                viewHistoryBtn.disabled = true;
+                patientInfoCard.classList.add('hidden');
+                currentReportSection.classList.add('hidden');
+                historyReportSection.classList.add('hidden');
+                doctorNotesSection.classList.add('hidden');
+                return;
+            }
+
+            try {
+                // 获取老人详细信息
+                const patientDetails = await apiClient.fetchPatientDetails(currentPatientId);
+                displayPatientInfo(patientDetails.data);
+
+                // 获取可用的日期
+                await fetchAvailableDates(currentPatientId);
+
+                // 启用相关按钮
+                generateReportBtn.disabled = false;
+                viewHistoryBtn.disabled = false;
+                patientInfoCard.classList.remove('hidden');
+            } catch (error) {
+                showError('获取老人信息失败: ' + error.message);
+            }
+        }
+
+        function displayPatientInfo(patient) {
+            patientName.textContent = patient.name || '--';
+
+            // 修复性别判断：直接匹配中文值
+            patientGender.textContent = patient.gender === '男' ? '男' : (patient.gender === '女' ? '女' : '--');
+
+            patientAge.textContent = patient.age ? `${patient.age}岁` : '--';
+            patientPhone.textContent = patient.phone || '--';
+            lastAssessment.textContent = patient.lastAssessmentDate
+                ? formatDateForDisplay(patient.lastAssessmentDate)
+                : '暂无评估记录';
+        }
+
+        function formatDateForDisplay(dateString) {
+            const date = new Date(dateString);
+            return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+        }
+
+        async function fetchAvailableDates(patientId) {
+            try {
+                const response = await apiClient.fetchAvailableDates(patientId);
+                if (Array.isArray(response.data)) {
+                    populateDateDropdown(response.data);
+                } else {
+                    showError('获取健康记录日期失败: 服务器返回的数据格式不正确');
+                }
+            } catch (error) {
+                showError('获取健康记录日期失败: ' + error.message);
+            }
+        }
+
+        function populateDateDropdown(dates) {
+            datepicker.innerHTML = '<option value="">-- 选择评估日期 --</option>';
+            dates.forEach(date => {
+                const option = document.createElement('option');
+                option.value = date;
+                option.textContent = formatDateForDisplay(date);
+                datepicker.appendChild(option);
+            });
+            datepicker.disabled = false;
+            confirmDateBtn.disabled = dates.length === 0;
+        }
+
+        async function checkAndViewReport() {
+            const selectedDate = datepicker.value;
+            if (!selectedDate) {
+                showError('请先选择评估日期');
+                return;
+            }
+
+            try {
+                const response = await apiClient.fetchWithAuth(
+                    `${apiClient.baseUrl}/health-records?patientId=${currentPatientId}&date=${selectedDate}`,
+                    { method: 'GET' }
+                );
+
+                if (response && response.data) {
+                    currentReportId = response.data.id;
+                    await displayReport(response.data);
+                    currentReportSection.classList.remove('hidden');
+                    doctorNotesSection.classList.remove('hidden');
+                    historyReportSection.classList.add('hidden');
+                } else {
+                    showError('未找到该日期的评估报告');
+                }
+            } catch (error) {
+                showError('获取健康报告失败: ' + error.message);
+            }
+        }
+
+        async function displayReport(report) {
+            if (!report) return;
+
+            reportDate.textContent = formatDateForDisplay(report.recordDate);
+            assessmentTime.textContent = formatDateForDisplay(report.assessmentDate);
+
+            // 设置风险等级标签
+            const riskLevel = report.riskLevel || 'unknown';
+            riskLevelTag.textContent = getRiskLevelText(riskLevel);
+            riskLevelTag.className = 'risk-tag ' + getRiskLevelClass(riskLevel);
+
+            // 设置风险描述和建议
+            let content = {};
+            if (report.parsedContent) {
+                content = report.parsedContent;
+            } else if (report.reportContent) {
+                try {
+                    content = JSON.parse(report.reportContent);
+                } catch (e) {
+                    console.error('解析报告内容失败:', e);
+                    content = {
+                        riskDescription: '报告内容解析失败',
+                        recommendations: ['请联系管理员']
+                    };
+                }
+            } else {
+                content = {
+                    riskDescription: '暂无报告内容',
+                    recommendations: ['请联系管理员']
+                };
+            }
+
+            riskDescription.textContent = content.riskDescription || '暂无风险描述';
+
+            // 填充健康评估部分
+            fillHealthAssessment(content);
+
+            // 填充健康建议
+            if (content.recommendations && content.recommendations.length > 0) {
+                generalHealthAdvice.innerHTML = content.recommendations
+                    .map(rec => `<li class="mb-2">${rec}</li>`)
+                    .join('');
+            } else {
+                generalHealthAdvice.innerHTML = '<p>暂无具体建议</p>';
+            }
+
+            // 初始化富文本编辑器并填充医生备注
+            destroyEditor(); // 先销毁现有编辑器
+            editor = await initEditor(report.doctorNotes || '');
+        }
+
+        function fillHealthAssessment(assessment) {
+            healthAssessmentSection.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="chart-container">
+                    <h4 class="font-medium mb-4">血压评估</h4>
+                    <div class="h-48" id="bloodPressureChart"></div>
+                    <p class="mt-4 text-sm">${assessment.bloodPressureAssessment || '暂无血压评估'}</p>
+                </div>
+                <div class="chart-container">
+                    <h4 class="font-medium mb-4">血糖评估</h4>
+                    <div class="h-48" id="bloodSugarChart"></div>
+                    <p class="mt-4 text-sm">${assessment.bloodSugarAssessment || '暂无血糖评估'}</p>
+                </div>
+                <div class="chart-container">
+                    <h4 class="font-medium mb-4">BMI评估</h4>
+                    <div class="h-48" id="bmiChart"></div>
+                    <p class="mt-4 text-sm">${assessment.bmiAssessment || '暂无BMI评估'}</p>
+                    ${assessment.bmiValue ? `<p class="text-sm">BMI值: ${assessment.bmiValue.toFixed(1)}</p>` : ''}
+                </div>
+                <div class="chart-container">
+                    <h4 class="font-medium mb-4">综合评估</h4>
+                    <div class="h-48" id="riskChart"></div>
+                    <p class="mt-4 text-sm">${assessment.riskDescription || '暂无综合评估'}</p>
+                </div>
+            </div>
+        `;
+
+            renderCharts(assessment);
+        }
+
+        // Emoji过滤工具函数
+        function filterEmoji(text) {
+            if (!text) return '';
+            // 匹配emoji和特殊符号的正则表达式
+            return text.replace(
+                /[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u2B55]|[\u200d]|[\u23cf]|[\u23e9]|[\u231a]|[\ufe0f]|[\u3030]|[\ufe0e]/g,
+                ''
+            );
+        }
+
+        function renderCharts(assessment) {
+            // 血压图表
+            const bpChart = echarts.init(document.getElementById('bloodPressureChart'));
+            bpChart.setOption({
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    data: ['收缩压', '舒张压']
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'mmHg'
+                },
+                series: [{
+                    data: [
+                        assessment.systolicBloodPressure || 120,
+                        assessment.diastolicBloodPressure || 80
+                    ],
+                    type: 'bar',
+                    itemStyle: {
+                        color: function(params) {
+                            const value = params.data;
+                            if (params.dataIndex === 0) { // 收缩压
+                                return value > 140 ? '#F5222D' : value > 120 ? '#FA8C16' : '#52C41A';
+                            } else { // 舒张压
+                                return value > 90 ? '#F5222D' : value > 80 ? '#FA8C16' : '#52C41A';
+                            }
+                        }
+                    }
+                }]
+            });
+
+            // 血糖图表
+            const bsChart = echarts.init(document.getElementById('bloodSugarChart'));
+            bsChart.setOption({
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    data: ['空腹血糖']
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'mmol/L'
+                },
+                series: [{
+                    data: [assessment.bloodSugar || 5.5],
+                    type: 'bar',
+                    itemStyle: {
+                        color: function(params) {
+                            const value = params.data;
+                            return value > 7.0 ? '#F5222D' : value > 6.1 ? '#FA8C16' : '#52C41A';
+                        }
+                    }
+                }]
+            });
+
+            // BMI图表
+            const bmiChart = echarts.init(document.getElementById('bmiChart'));
+            const bmiValue = assessment.bmiValue || 22;
+            bmiChart.setOption({
+                tooltip: {
+                    formatter: '{a} <br/>{b} : {c}%'
+                },
+                series: [{
+                    name: 'BMI',
+                    type: 'gauge',
+                    min: 15,
+                    max: 35,
+                    progress: {
+                        show: true,
+                        width: 18
+                    },
+                    detail: {
+                        valueAnimation: true,
+                        formatter: '{value}'
+                    },
+                    data: [{
+                        value: bmiValue,
+                        name: 'BMI'
+                    }],
+                    axisLine: {
+                        lineStyle: {
+                            color: [
+                                [0.2, '#52C41A'],  // 低风险
+                                [0.7, '#FA8C16'],  // 中风险
+                                [1, '#F5222D']     // 高风险
+                            ]
+                        }
+                    }
+                }]
+            });
+
+            // 风险雷达图
+            const riskChart = echarts.init(document.getElementById('riskChart'));
+            riskChart.setOption({
+                tooltip: {},
+                radar: {
+                    indicator: [
+                        { name: '心血管', max: 100 },
+                        { name: '代谢', max: 100 },
+                        { name: '骨骼', max: 100 },
+                        { name: '认知', max: 100 },
+                        { name: '精神', max: 100 }
+                    ]
+                },
+                series: [{
+                    name: '风险指数',
+                    type: 'radar',
+                    data: [{
+                        value: [
+                            assessment.cardiovascularRisk || 65,
+                            assessment.metabolicRisk || 70,
+                            assessment.boneRisk || 80,
+                            assessment.cognitiveRisk || 60,
+                            assessment.mentalRisk || 50
+                        ],
+                        name: '风险指数',
+                        areaStyle: {
+                            color: 'rgba(122, 169, 104, 0.3)'
+                        }
+                    }]
+                }]
+            });
+
+            // 响应式调整图表大小
+            window.addEventListener('resize', function() {
+                bpChart.resize();
+                bsChart.resize();
+                bmiChart.resize();
+                riskChart.resize();
+            });
+        }
+
+        function getRiskLevelText(level) {
+            const levels = {
+                low: '低风险',
+                medium: '中风险',
+                high: '高风险',
+                unknown: '未评估'
+            };
+            return levels[level] || '未评估';
+        }
+
+        function getRiskLevelClass(level) {
+            const classes = {
+                low: 'risk-low',
+                medium: 'risk-medium',
+                high: 'risk-high',
+                unknown: 'risk-low'
+            };
+            return classes[level] || 'risk-low';
+        }
+
+        async function generateReport() {
+            if (!currentPatientId) {
+                showError('请先选择老人');
+                return;
+            }
+
+            const selectedDate = datepicker.value;
+            if (!selectedDate) {
+                showError('请选择评估日期');
+                return;
+            }
+
+            try {
+                const generateReportBtn = document.getElementById('generateReportBtn');
+                setButtonLoading(generateReportBtn, true);
+
+                const recordDate = selectedDate;
+                const requestData = {
+                    user_id: currentPatientId,
+                    recordDate: recordDate,
+                    health_data: {
+                        systolicBloodPressure: 120,
+                        diastolicBloodPressure: 80,
+                        bloodSugar: 5.5,
+                        weight: 70,
+                        height: 170
+                    }
+                };
+                // 过滤所有文本字段
+                if (requestData.note) {
+                    requestData.note = filterEmoji(requestData.note);
+                }
+
+                const response = await apiClient.fetchWithAuth(`${apiClient.baseUrl}/generate`, {
+                    method: 'POST',
+                    body: JSON.stringify(requestData)
+                });
+
+
+                if (response && response.data) {
+                    currentReportId = response.data.id;
+                    await displayReport(response.data);
+                    currentReportSection.classList.remove('hidden');
+                    doctorNotesSection.classList.remove('hidden');
+
+                    // 更新患者信息
+                    const patientDetails = await apiClient.fetchPatientDetails(currentPatientId);
+                    displayPatientInfo(patientDetails.data);
+
+                    showSuccess('健康报告生成成功');
+                } else {
+                    showError('报告生成失败：服务器返回无效数据');
+                }
+            } catch (error) {
+                if (error.message.includes('400')) {
+                    showError('请求参数错误，请检查输入数据');
+                } else if (error.message.includes('404')) {
+                    showError('未找到相关资源');
+                } else {
+                    showError('报告生成失败: ' + (error.message || '未知错误'));
+                }
+            } finally {
+                setButtonLoading(generateReportBtn, false);
+            }
+        }
+
+        async function viewHistoryReports() {
+            if (!currentPatientId) {
+                showError('请先选择老人');
+                return;
+            }
+
+            try {
+                const viewHistoryBtn = document.getElementById('viewHistoryBtn');
+                setButtonLoading(viewHistoryBtn, true);
+
+                const response = await apiClient.getHealthHistory(currentPatientId);
+
+                if (response && Array.isArray(response.data)) {
+                    populateHistoryReportList(response.data);
+                } else {
+                    showError('获取历史报告失败：服务器返回无效数据');
+                }
+
+                currentReportSection.classList.add('hidden');
+                historyReportSection.classList.remove('hidden');
+                doctorNotesSection.classList.add('hidden');
+            } catch (error) {
+                showError('获取历史报告失败: ' + error.message);
+            } finally {
+                setButtonLoading(viewHistoryBtn, false);
+            }
+        }
+
+        function populateHistoryReportList(reports) {
+            historyReportList.innerHTML = '';
+
+            if (!reports || reports.length === 0) {
+                historyReportList.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-gray-500">暂无历史评估报告</td>
+                </tr>
+            `;
+                return;
+            }
+
+            reports.forEach(report => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ${formatDateForDisplay(report.recordDate)}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${formatDateForDisplay(report.assessmentDate)}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="risk-tag ${getRiskLevelClass(report.riskLevel)}">
+                        ${getRiskLevelText(report.riskLevel)}
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-500">
+                    ${report.riskDescription || '无描述'}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button class="download-report-btn text-primary hover:text-secondary mr-3" data-id="${report.id}">
+                        <i class="fas fa-download mr-1"></i> 下载
+                    </button>
+                    <button class="view-report-btn text-primary hover:text-secondary mr-3" data-id="${report.id}">
+                        <i class="fas fa-eye mr-1"></i> 查看
+                    </button>
+                    <button class="delete-report-btn text-error hover:text-red-700" data-id="${report.id}">
+                        <i class="fas fa-trash-alt mr-1"></i> 删除
+                    </button>
+                </td>
+            `;
+                historyReportList.appendChild(row);
+            });
+
+            // 为下载按钮添加事件监听
+            document.querySelectorAll('.download-report-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const reportId = this.dataset.id;
+                    try {
+                        setButtonLoading(this, true);
+                        const blob = await apiClient.downloadReport(reportId, currentPatientId);
+                        const urlBlob = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = urlBlob;
+                        a.download = `health_report_${reportId}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        URL.revokeObjectURL(urlBlob);
+                        a.remove();
+                        showSuccess('报告下载成功');
+                    } catch (error) {
+                        showError('下载报告失败: ' + error.message);
+                    } finally {
+                        setButtonLoading(this, false);
+                    }
+                });
+            });
+
+            // 为查看按钮添加事件监听
+            document.querySelectorAll('.view-report-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    currentReportId = this.dataset.id;
+                    try {
+                        const report = await apiClient.getReportDetail(currentReportId);
+                        await displayReport(report.data);
+                        currentReportSection.classList.remove('hidden');
+                        doctorNotesSection.classList.remove('hidden');
+                        historyReportSection.classList.add('hidden');
+                    } catch (error) {
+                        showError('查看报告失败: ' + error.message);
+                    }
+                });
+            });
+
+            // 为删除按钮添加事件监听
+            document.querySelectorAll('.delete-report-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const reportId = this.dataset.id;
+                    if (confirm('确定要删除这份报告吗？删除后将无法恢复。')) {
+                        deleteReport(reportId);
+                    }
+                });
+            });
+        }
+
+        async function deleteReport(reportId) {
+            try {
+                const response = await apiClient.deleteReport(reportId, currentPatientId);
+                if (response && response.success) {
+                    showSuccess('删除报告成功');
+                    await viewHistoryReports();
+                } else {
+                    showError('删除报告失败：服务器返回无效数据');
+                }
+            } catch (error) {
+                showError('删除报告失败: ' + error.message);
+            }
+        }
+
+        async function clearHistoryReports() {
+            if (!currentPatientId) {
+                showError('请先选择老人');
+                return;
+            }
+
+            if (confirm('确定要清空该老人的所有历史评估记录吗？此操作不可撤销！')) {
+                try {
+                    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+                    setButtonLoading(clearHistoryBtn, true);
+
+                    const response = await apiClient.clearHistory(currentPatientId);
+
+                    if (response && response.success) {
+                        showSuccess('已清空历史记录');
+                        populateHistoryReportList([]);
+                        // 刷新患者信息
+                        const patientDetails = await apiClient.fetchPatientDetails(currentPatientId);
+                        displayPatientInfo(patientDetails.data);
+                    } else {
+                        showError('清空历史记录失败：服务器返回无效数据');
+                    }
+                } catch (error) {
+                    showError('清空历史记录失败: ' + error.message);
+                } finally {
+                    setButtonLoading(clearHistoryBtn, false);
+                }
+            }
+        }
+
+        async function saveNotes() {
+            if (!currentReportId) {
+                showError('当前没有可保存的报告');
+                return;
+            }
+
+            try {
+                const saveNotesBtn = document.getElementById('saveNotesBtn');
+                setButtonLoading(saveNotesBtn, true);
+
+                const notes = getEditorContent();
+                const response = await apiClient.saveDoctorNotes(currentReportId, notes);
+
+                if (response && response.success) {
+                    showSuccess('备注保存成功');
+                } else {
+                    showError('备注保存失败：服务器返回无效数据');
+                }
+            } catch (error) {
+                showError('备注保存失败: ' + error.message);
+            } finally {
+                setButtonLoading(saveNotesBtn, false);
+            }
+        }
+
+        // 点击页面其他地方关闭头像下拉菜单
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.relative') && !e.target.classList.contains('avatar-dropdown')) {
+                const dropdowns = document.querySelectorAll('.avatar-dropdown');
+                dropdowns.forEach(dropdown => dropdown.classList.remove('show'));
+            }
+        });
+        
+        // 增强功能：风险等级可视化
+        function visualizeRiskLevel(riskLevel) {
+            const riskColors = {
+                '低风险': '#52C41A',
+                '中风险': '#FA8C16',
+                '高风险': '#F5222D'
+            };
+            
+            const riskChart = echarts.init(document.getElementById('riskChart'));
+            riskChart.setOption({
+                series: [{
+                    type: 'gauge',
+                    startAngle: 180,
+                    endAngle: 0,
+                    min: 0,
+                    max: 100,
+                    splitNumber: 5,
+                    itemStyle: {
+                        color: riskColors[riskLevel] || '#52C41A',
+                        shadowColor: 'rgba(0,138,255,0.45)',
+                        shadowBlur: 10,
+                        shadowOffsetX: 2,
+                        shadowOffsetY: 2
+                    },
+                    progress: {
+                        show: true,
+                        roundCap: true,
+                        width: 18
+                    },
+                    pointer: {
+                        icon: 'path://M2090.36389,615.30999 L2090.36389,615.30999 C2091.48372,615.30999 2092.40383,616.194028 2092.44859,617.312956 L2096.90698,728.755929 C2097.05155,732.369577 2094.2393,735.416212 2090.62566,735.56078 C2090.53845,735.564269 2090.45117,735.566014 2090.36389,735.566014 L2090.36389,735.566014 C2086.74736,735.566014 2083.81557,732.63423 2083.81557,729.017692 C2083.81557,728.930412 2083.81732,728.84314 2083.82081,728.755929 L2088.2792,617.312956 C2088.32396,616.194028 2089.24407,615.30999 2090.36389,615.30999 Z',
+                        length: '75%',
+                        width: 16,
+                        offsetCenter: [0, '5%']
+                    },
+                    axisLine: {
+                        roundCap: true,
+                        lineStyle: {
+                            width: 18
+                        }
+                    },
+                    axisTick: {
+                        splitNumber: 2,
+                        lineStyle: {
+                            width: 2,
+                            color: '#999'
+                        }
+                    },
+                    splitLine: {
+                        length: 12,
+                        lineStyle: {
+                            width: 3,
+                            color: '#999'
+                        }
+                    },
+                    axisLabel: {
+                        distance: 30,
+                        color: '#999',
+                        fontSize: 14
+                    },
+                    title: {
+                        show: false
+                    },
+                    detail: {
+                        backgroundColor: '#fff',
+                        borderColor: '#999',
+                        borderWidth: 2,
+                        width: '60%',
+                        lineHeight: 40,
+                        height: 40,
+                        borderRadius: 8,
+                        offsetCenter: [0, '35%'],
+                        valueAnimation: true,
+                        formatter: function (value) {
+                            return '{value|' + value.toFixed(0) + '}\n{unit|分}';
+                        },
+                        rich: {
+                            value: {
+                                fontSize: 20,
+                                fontWeight: 'bolder',
+                                color: '#333'
+                            },
+                            unit: {
+                                fontSize: 12,
+                                color: '#999',
+                                padding: [0, 0, -20, 10]
+                            }
+                        }
+                    },
+                    data: [{
+                        value: riskLevel === '低风险' ? 30 : riskLevel === '中风险' ? 60 : 85,
+                        name: '健康风险'
+                    }]
+                }]
+            });
+        }
+        
+        // 增强功能：自动生成健康建议
+        function generateHealthAdvice(assessment) {
+            const advice = [];
+            
+            // 血压建议
+            if (assessment.systolicBloodPressure > 140 || assessment.diastolicBloodPressure > 90) {
+                advice.push({
+                    type: '血压',
+                    level: 'warning',
+                    content: '血压偏高，建议：1. 减少盐分摄入，每日食盐量不超过6克；2. 保持规律运动，每周至少150分钟中等强度有氧运动；3. 定期监测血压，保持心情舒畅；4. 遵医嘱按时服药。'
+                });
+            } else if (assessment.systolicBloodPressure < 90 || assessment.diastolicBloodPressure < 60) {
+                advice.push({
+                    type: '血压',
+                    level: 'warning',
+                    content: '血压偏低，建议：1. 适当增加盐分和水分摄入；2. 避免长时间站立；3. 如有头晕症状，请及时就医。'
+                });
+            } else {
+                advice.push({
+                    type: '血压',
+                    level: 'success',
+                    content: '血压正常，继续保持健康的生活方式。'
+                });
+            }
+            
+            // 血糖建议
+            if (assessment.bloodSugar > 7.0) {
+                advice.push({
+                    type: '血糖',
+                    level: 'warning',
+                    content: '血糖偏高，建议：1. 控制碳水化合物摄入，选择低升糖指数食物；2. 增加膳食纤维摄入；3. 规律运动，控制体重；4. 定期监测血糖，遵医嘱用药。'
+                });
+            } else if (assessment.bloodSugar < 3.9) {
+                advice.push({
+                    type: '血糖',
+                    level: 'warning',
+                    content: '血糖偏低，建议：1. 规律进食，避免空腹时间过长；2. 随身携带糖果或饼干；3. 如出现低血糖症状，及时补充糖分。'
+                });
+            } else {
+                advice.push({
+                    type: '血糖',
+                    level: 'success',
+                    content: '血糖正常，继续保持健康的饮食习惯。'
+                });
+            }
+            
+            // BMI建议
+            if (assessment.bmiValue > 28) {
+                advice.push({
+                    type: '体重',
+                    level: 'warning',
+                    content: 'BMI偏高，建议：1. 控制总热量摄入，减少高脂肪、高糖食物；2. 增加蔬菜水果摄入；3. 坚持规律运动，每周至少150分钟；4. 循序渐进减重，每月减重不超过4公斤。'
+                });
+            } else if (assessment.bmiValue < 18.5) {
+                advice.push({
+                    type: '体重',
+                    level: 'warning',
+                    content: 'BMI偏低，建议：1. 适当增加营养摄入，选择优质蛋白质；2. 少食多餐，增加进食频率；3. 适当进行力量训练，增加肌肉量。'
+                });
+            } else {
+                advice.push({
+                    type: '体重',
+                    level: 'success',
+                    content: 'BMI正常，继续保持健康的体重管理。'
+                });
+            }
+            
+            return advice;
+        }
+        
+        // 增强功能：打印报告
+        function printReport() {
+            const reportContent = document.getElementById('currentReportSection');
+            const patientInfo = document.getElementById('patientInfoCard');
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>健康风险评估报告</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        .header { text-align: center; margin-bottom: 30px; }
+                        .patient-info { background: #f5f5f5; padding: 15px; margin-bottom: 20px; border-radius: 8px; }
+                        .risk-level { font-size: 24px; font-weight: bold; margin: 20px 0; }
+                        .advice-section { background: #e3f2fd; padding: 15px; margin-top: 20px; border-radius: 8px; }
+                        .advice-item { margin: 10px 0; padding: 10px; background: white; border-radius: 4px; }
+                        .advice-type { font-weight: bold; color: #1976d2; }
+                        .warning { color: #d32f2f; }
+                        .success { color: #388e3c; }
+                        @media print { body { padding: 0; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>健康风险评估报告</h1>
+                        <p>乐龄生活服务平台</p>
+                    </div>
+                    <div class="patient-info">
+                        <h3>患者信息</h3>
+                        <p>姓名：${document.getElementById('patientName').textContent}</p>
+                        <p>性别：${document.getElementById('patientGender').textContent}</p>
+                        <p>年龄：${document.getElementById('patientAge').textContent}</p>
+                        <p>联系电话：${document.getElementById('patientPhone').textContent}</p>
+                        <p>评估时间：${document.getElementById('assessmentTime').textContent}</p>
+                    </div>
+                    <div class="risk-level">
+                        风险等级：<span class="${document.getElementById('riskLevelTag').textContent.includes('高') ? 'warning' : 'success'}">${document.getElementById('riskLevelTag').textContent}</span>
+                    </div>
+                    <div class="advice-section">
+                        <h3>健康建议</h3>
+                        ${generateHealthAdviceText()}
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+        
+        // 生成健康建议文本
+        function generateHealthAdviceText() {
+            const adviceContainer = document.getElementById('generalHealthAdvice');
+            if (!adviceContainer) return '<p>暂无健康建议</p>';
+            
+            return adviceContainer.innerHTML;
+        }
+        
+        // 添加打印按钮
+        function addPrintButton() {
+            const reportButtons = document.querySelector('.flex.items-center.space-x-4');
+            if (reportButtons && !document.getElementById('printReportBtn')) {
+                const printBtn = document.createElement('button');
+                printBtn.id = 'printReportBtn';
+                printBtn.className = 'px-6 py-2 border border-primary text-primary hover:bg-primary hover:text-white transition-colors duration-300 rounded-button whitespace-nowrap';
+                printBtn.innerHTML = '<i class="fas fa-print mr-2"></i>打印报告';
+                printBtn.addEventListener('click', printReport);
+                reportButtons.appendChild(printBtn);
+            }
+        }
+        
+        // 页面加载完成后添加打印按钮
+        window.addEventListener('load', addPrintButton);
+    });
+</script>
+</body>
+</html>

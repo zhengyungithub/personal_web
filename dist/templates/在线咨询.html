@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线咨询 - 乐龄生活</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7AA968',
+                        secondary: '#F4A460',
+                        error: '#ef4444'
+                    },
+                    borderRadius: {
+                        'none': '0px',
+                        'sm': '4px',
+                        DEFAULT: '8px',
+                        'md': '12px',
+                        'lg': '16px',
+                        'xl': '20px',
+                        '2xl': '24px',
+                        '3xl': '32px',
+                        'full': '9999px',
+                        'button': '8px'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            min-height: 1024px;
+            background-color: #F8F9FA;
+        }
+
+        .error-message {
+            color: #f5222d;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .nav-item {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: #6B8E51;
+            font-weight: 500;
+        }
+
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #6B8E51;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .menu-item:hover {
+            background-color: rgba(107, 142, 81, 0.1);
+        }
+
+        .menu-item.active {
+            background-color: rgba(107, 142, 81, 0.1);
+            color: #6B8E51;
+            font-weight: 500;
+        }
+
+        /* 咨询卡片样式 */
+        .consultation-card {
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+
+        .consultation-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .consultation-card.unread {
+            border-left-color: #6B8E51;
+            background-color: rgba(107, 142, 81, 0.05);
+        }
+
+        /* 主要按钮样式 */
+        .bg-primary {
+            background-color: #6B8E51;
+        }
+
+        .text-primary {
+            color: #6B8E51;
+        }
+
+        .border-primary {
+            border-color: #6B8E51;
+        }
+
+        /* 按钮基础样式 */
+        .rounded-button {
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        /* 悬停效果 */
+        .bg-primary:hover {
+            background-color: #5a7c4a;
+        }
+
+        .border-primary:hover {
+            background-color: #6B8E51;
+            color: white;
+        }
+
+        /* 头像下拉菜单样式 */
+        .avatar-dropdown {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+            width: 160px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 100;
+            display: none;
+        }
+
+        .avatar-dropdown.show {
+            display: block;
+        }
+
+        .avatar-dropdown-item {
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .avatar-dropdown-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .avatar-dropdown-item i {
+            margin-right: 8px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* 医生卡片样式 */
+        .doctor-card {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .doctor-card:hover {
+            border-color: #6B8E51;
+        }
+
+        .doctor-card.selected {
+            border-color: #6B8E51;
+            background-color: rgba(107, 142, 81, 0.05);
+        }
+
+        .doctor-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            margin-right: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6B8E51;
+            font-size: 24px;
+        }
+
+        .doctor-info {
+            flex: 1;
+        }
+
+        .doctor-name {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .doctor-specialty {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .doctor-rating {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .star-filled {
+            color: #FFC107;
+        }
+
+        .star-empty {
+            color: #E0E0E0;
+        }
+
+        /* 咨询表单样式 */
+        .consultation-form {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .question-input {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: vertical;
+        }
+
+        .question-input:focus {
+            outline: none;
+            border-color: #6B8E51;
+        }
+
+        /* 咨询历史记录样式 */
+        .consultation-history {
+            margin-top: 24px;
+        }
+
+        .consultation-item {
+            padding: 16px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .consultation-date {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .consultation-question {
+            margin-bottom: 8px;
+        }
+
+        .consultation-answer {
+            padding: 12px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        /* 标签样式 */
+        .status-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background-color: #FFF7E6;
+            color: #FA8C16;
+        }
+
+        .status-completed {
+            background-color: #E6F7E0;
+            color: #52C41A;
+        }
+
+        /* 内容区域切换样式 */
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        /* 我的医生卡片样式 */
+        .my-doctor-card {
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .my-doctor-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .my-doctor-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            margin-right: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6B8E51;
+            font-size: 24px;
+        }
+
+        .my-doctor-info {
+            flex: 1;
+        }
+
+        .my-doctor-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-outline {
+            border: 1px solid #6B8E51;
+            color: #6B8E51;
+            background: transparent;
+        }
+
+        .btn-outline:hover {
+            background: #6B8E51;
+            color: white;
+        }
+
+        .btn-primary-sm {
+            background: #6B8E51;
+            color: white;
+            border: none;
+        }
+
+        .btn-primary-sm:hover {
+            background: #5a7c4a;
+        }
+    </style>
+</head>
+
+<body>
+<header class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
+    <nav class="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-8">
+            <a href="/" class="text-2xl font-['Pacifico'] text-primary">乐龄生活</a>
+            <div class="hidden lg:flex space-x-6">
+                <a href="/" class="nav-link text-gray-600 hover:text-primary transition-colors">首页</a>
+                <div class="dropdown relative">
+                    <a href="#" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">健康管理</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="/健康档案管理" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">健康档案管理</a>
+                        <a href="/医生咨询" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">医生咨询</a>
+                    </div>
+                </div>
+                <div class="dropdown relative">
+                    <a href="#" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">我的工作台</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="/待处理咨询" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">待处理咨询</a>
+                        <a href="/已处理咨询" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">已处理咨询</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="errorAlert" class="hidden fixed top-20 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <span class="font-bold">错误!</span>
+            <span id="errorMessage"></span>
+            <span class="absolute top-0 bottom-0 right-0 px-4 py-3" onclick="document.getElementById('errorAlert').classList.add('hidden')">
+                <i class="fas fa-times"></i>
+            </span>
+        </div>
+        <div class="flex items-center space-x-6">
+            <div class="relative">
+                <input type="search" placeholder="搜索咨询" class="search-input w-64 h-10 pl-10 pr-4 rounded-full border border-gray-200 focus:outline-none focus:border-primary text-sm">
+                <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            </div>
+            <div class="relative">
+                <button id="notificationBtn" class="w-10 h-10 flex items-center justify-center relative cursor-pointer">
+                    <i class="ri-notification-3-line text-xl text-gray-600"></i>
+                    <span class="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-xs rounded-full flex items-center justify-center">3</span>
+                </button>
+            </div>
+            <div class="relative">
+                <button id="avatarBtn" class="w-10 h-10 flex items-center justify-center cursor-pointer">
+                    <i class="ri-user-line text-xl text-gray-600"></i>
+                </button>
+                <!-- 头像下拉菜单 -->
+                <div id="avatarDropdown" class="avatar-dropdown">
+                    <div class="avatar-dropdown-item" onclick="showProfile()">
+                        <i class="ri-user-line"></i>
+                        <span>个人信息</span>
+                    </div>
+                    <div class="avatar-dropdown-item" onclick="logout()">
+                        <i class="ri-logout-box-r-line"></i>
+                        <span>退出登录</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<div class="w-[1440px] mx-auto pt-16">
+    <main class="flex min-h-[calc(100vh-64px)]">
+        <aside class="w-64 bg-white border-r p-4">
+            <div class="text-lg font-medium mb-4">医生咨询</div>
+            <div class="space-y-1">
+                <a href="#" class="menu-item active" data-section="new-consultation" onclick="switchSection('new-consultation', this)">
+                    <i class="fas fa-comment-medical mr-3"></i>
+                    <span>新咨询</span>
+                </a>
+                <a href="#" class="menu-item" data-section="consultation-history" onclick="switchSection('consultation-history', this)">
+                    <i class="fas fa-history mr-3 text-gray-400"></i>
+                    <span>咨询记录</span>
+                </a>
+                <a href="#" class="menu-item" data-section="my-doctors" onclick="switchSection('my-doctors', this)">
+                    <i class="fas fa-user-md mr-3 text-gray-400"></i>
+                    <span>我的医生</span>
+                </a>
+            </div>
+        </aside>
+
+        <div class="flex-1 p-8">
+            <!-- 新咨询区域 -->
+            <div id="new-consultation" class="content-section active">
+                <div class="mb-8">
+                    <h1 class="text-2xl font-medium mb-2">新咨询</h1>
+                    <p class="text-gray-500">选择医生并提交您的健康问题</p>
+                </div>
+
+                <!-- 医生选择区域 -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium">选择医生</h3>
+                        <div class="flex space-x-2">
+                            <select id="doctorFilter" class="px-3 py-2 border border-gray-200 rounded-button text-sm">
+                                <option value="all">所有科室</option>
+                                <option value="心血管内科">心血管内科</option>
+                                <option value="内分泌科">内分泌科</option>
+                                <option value="神经内科">神经内科</option>
+                                <option value="骨科">骨科</option>
+                            </select>
+                            <select id="doctorSort" class="px-3 py-2 border border-gray-200 rounded-button text-sm">
+                                <option value="rating">评分最高</option>
+                                <option value="name">姓名排序</option>
+                                <option value="count">咨询量</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="doctorsList">
+                        <!-- 医生列表将通过JavaScript动态加载 -->
+                    </div>
+                </div>
+
+                <!-- 咨询表单 -->
+                <div class="consultation-form">
+                    <h3 class="text-lg font-medium mb-4">咨询问题</h3>
+                    <div class="relative">
+                        <textarea id="consultationQuestion" class="question-input" placeholder="请详细描述您的健康问题，包括症状、持续时间、既往病史等..." maxlength="500"></textarea>
+                        <div class="absolute bottom-3 right-3 text-sm text-gray-500">
+                            <span id="charCount">0</span>/500
+                        </div>
+                    </div>
+                    <div class="mt-4 space-y-3">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="attachReport" class="mr-2">
+                            <label for="attachReport">附上最近的健康报告</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="urgentConsult" class="mr-2">
+                            <label for="urgentConsult">紧急咨询</label>
+                        </div>
+                    </div>
+                    <div class="flex justify-end mt-4">
+                        <button id="submitConsultationBtn" class="px-6 py-2 bg-primary text-white rounded-button">
+                            <i class="fas fa-paper-plane mr-2"></i>提交咨询
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 历史咨询记录 -->
+                <div class="consultation-history">
+                    <h3 class="text-lg font-medium mb-4">最近咨询记录</h3>
+                    <div id="recentConsultations">
+                        <!-- 最近咨询记录将通过JavaScript动态加载 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 咨询记录区域 -->
+            <div id="consultation-history" class="content-section">
+                <div class="mb-8">
+                    <h1 class="text-2xl font-medium mb-2">咨询记录</h1>
+                    <p class="text-gray-500">查看您的所有咨询历史</p>
+                </div>
+
+                <!-- 筛选和搜索 -->
+                <div class="bg-white rounded-lg p-4 mb-6">
+                    <div class="flex items-center space-x-4">
+                        <div class="flex-1">
+                            <input type="text" id="historySearch" placeholder="搜索咨询内容或医生" class="w-full px-4 py-2 border border-gray-200 rounded-button text-sm">
+                        </div>
+                        <select id="historyFilter" class="px-3 py-2 border border-gray-200 rounded-button text-sm">
+                            <option value="all">全部状态</option>
+                            <option value="pending">待回复</option>
+                            <option value="completed">已完成</option>
+                        </select>
+                        <select id="historySort" class="px-3 py-2 border border-gray-200 rounded-button text-sm">
+                            <option value="newest">最新优先</option>
+                            <option value="oldest">最早优先</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 咨询记录列表 -->
+                <div id="consultationHistoryList" class="space-y-4">
+                    <!-- 咨询记录将通过JavaScript动态加载 -->
+                </div>
+
+                <!-- 分页 -->
+                <div class="flex justify-center mt-8">
+                    <div class="inline-flex rounded-lg border border-gray-200">
+                        <button class="px-4 py-2 border-r border-gray-200 text-gray-500 hover:text-primary">上一页</button>
+                        <button class="px-4 py-2 bg-primary text-white">1</button>
+                        <button class="px-4 py-2 border-x border-gray-200 text-gray-600 hover:text-primary">2</button>
+                        <button class="px-4 py-2 text-gray-600 hover:text-primary">3</button>
+                        <button class="px-4 py-2 border-l border-gray-200 text-gray-600 hover:text-primary">下一页</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 我的医生区域 -->
+            <div id="my-doctors" class="content-section">
+                <div class="mb-8">
+                    <h1 class="text-2xl font-medium mb-2">我的医生</h1>
+                    <p class="text-gray-500">管理您关注的医生</p>
+                </div>
+
+                <!-- 关注的医生列表 -->
+                <div id="myDoctorsList" class="space-y-4">
+                    <!-- 我的医生列表将通过JavaScript动态加载 -->
+                </div>
+
+                <!-- 推荐医生 -->
+                <div class="mt-8">
+                    <h3 class="text-lg font-medium mb-4">推荐医生</h3>
+                    <div id="recommendedDoctors" class="grid grid-cols-2 gap-4">
+                        <!-- 推荐医生将通过JavaScript动态加载 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // 封装 API 调用的函数
+    const apiClient = {
+        baseUrl: '/api/consultations',
+        token: localStorage.getItem('token') || 'mock_token',
+        maxRetries: 3,
+
+        async getAvailableDoctors() {
+            return this.retryFetch(`${this.baseUrl}/doctors`);
+        },
+
+        async getRecentConsultations() {
+            return this.retryFetch(`${this.baseUrl}/recent`);
+        },
+
+        async submitConsultation(doctorId, question) {
+            return this.retryFetch(`${this.baseUrl}/submit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                },
+                body: JSON.stringify({
+                    doctor_id: doctorId,
+                    question: question
+                })
+            });
+        },
+
+        async retryFetch(url, options = {}, retries = 0) {
+            if (!this.token) {
+                throw new Error('用户未认证，请重新登录');
+            }
+
+            options.headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${this.token}`,
+                'Accept': 'application/json'
+            };
+
+            try {
+                const response = await fetch(url, options);
+
+                if (!response.ok) {
+                    let errorData;
+                    try {
+                        errorData = await response.json();
+                    } catch {
+                        errorData = { message: await response.text() };
+                    }
+                    throw new Error(errorData.message || `请求失败: ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                if (retries < this.maxRetries) {
+                    console.log(`请求失败，正在进行第 ${retries + 1} 次重试...`);
+                    return this.retryFetch(url, options, retries + 1);
+                }
+                console.error('达到最大重试次数，请求失败:', error);
+                showError(`请求失败: ${error.message}`);
+                throw error;
+            }
+        }
+    };
+
+    function showError(message) {
+        const errorAlert = document.getElementById('errorAlert');
+        const errorMessage = document.getElementById('errorMessage');
+
+        if (errorAlert && errorMessage) {
+            errorMessage.textContent = message;
+            errorAlert.classList.remove('hidden');
+            setTimeout(() => errorAlert.classList.add('hidden'), 5000);
+        } else {
+            alert(message);
+        }
+    }
+
+    function showSuccess(message) {
+        const successNotification = document.createElement('div');
+        successNotification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 flex items-center';
+        successNotification.innerHTML = `
+            <i class="ri-check-circle-line mr-2 text-xl"></i>
+            <span>${message}</span>
+        `;
+        document.body.appendChild(successNotification);
+        
+        setTimeout(() => {
+            successNotification.style.opacity = '0';
+            setTimeout(() => successNotification.remove(), 300);
+        }, 3000);
+    }
+
+    function formatDateTime(dateString) {
+        if (!dateString) return '--';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return dateString;
+        
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        
+        return `${year}-${month}-${day} ${hours}:${minutes}`;
+    }
+
+    function setButtonLoading(button, isLoading) {
+        if (isLoading) {
+            button.innerHTML = '<span class="loading-spinner"></span> ' + button.textContent.trim();
+            button.disabled = true;
+        } else {
+            const icon = button.id.includes('submit') ? 'fa-paper-plane' : '';
+            button.innerHTML = icon ? `<i class="fas ${icon} mr-2"></i>${button.textContent.trim()}` : button.textContent;
+            button.disabled = false;
+        }
+    }
+
+    function showProfile() {
+        window.location.href = '/profile';
+    }
+
+    function logout() {
+        if (confirm('确定要退出登录吗？')) {
+            localStorage.removeItem('token');
+            window.location.href = "/登录";
+        }
+    }
+
+    // 切换内容区域函数
+    function switchSection(sectionId, menuItem) {
+        // 阻止默认跳转行为
+        event.preventDefault();
+        
+        // 隐藏所有内容区域
+        document.querySelectorAll('.content-section').forEach(section => {
+            section.classList.remove('active');
+        });
+        
+        // 显示选中的内容区域
+        const selectedSection = document.getElementById(sectionId);
+        if (selectedSection) {
+            selectedSection.classList.add('active');
+        }
+        
+        // 更新左侧导航栏样式
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.classList.remove('active');
+            // 重置图标颜色
+            const icon = item.querySelector('i');
+            if (icon) {
+                icon.classList.add('text-gray-400');
+            }
+        });
+        
+        // 设置当前选中项的样式
+        menuItem.classList.add('active');
+        const activeIcon = menuItem.querySelector('i');
+        if (activeIcon) {
+            activeIcon.classList.remove('text-gray-400');
+        }
+        
+        // 根据选中的区域加载相应数据
+        if (sectionId === 'consultation-history') {
+            loadConsultationHistory();
+        } else if (sectionId === 'my-doctors') {
+            loadMyDoctors();
+        } else if (sectionId === 'new-consultation') {
+            loadRecentConsultations();
+        }
+    }
+
+    // 加载咨询记录
+    async function loadConsultationHistory() {
+        const historyContainer = document.getElementById('consultationHistoryList');
+        historyContainer.innerHTML = '<div class="text-center py-4">加载咨询记录中...</div>';
+        
+        try {
+            let consultations = [];
+            try {
+                const response = await apiClient.getRecentConsultations();
+                if (Array.isArray(response)) {
+                    consultations = response;
+                } else if (response && Array.isArray(response.data)) {
+                    consultations = response.data;
+                }
+            } catch (apiError) {
+                console.log('API请求失败，使用模拟数据:', apiError);
+                consultations = mockConsultations;
+            }
+            
+            if (consultations.length === 0) {
+                historyContainer.innerHTML = '<div class="text-center py-4 text-gray-500">暂无咨询记录</div>';
+                return;
+            }
+            
+            historyContainer.innerHTML = '';
+            consultations.forEach(consultation => {
+                const item = document.createElement('div');
+                item.className = 'consultation-item';
+                item.dataset.id = consultation.id;
+                
+                item.innerHTML = `
+                    <div class="consultation-date">
+                        ${formatDateTime(consultation.created_at)} - ${consultation.doctor_name}
+                        <span class="status-tag ${consultation.status === 'completed' ? 'status-completed' : 'status-pending'} ml-2">
+                            ${consultation.status === 'completed' ? '已完成' : '待回复'}
+                        </span>
+                    </div>
+                    <div class="consultation-question">
+                        <strong>问题:</strong> ${consultation.question}
+                    </div>
+                    ${consultation.answer ? `
+                    <div class="consultation-answer mt-2">
+                        <strong>医生回复:</strong> ${consultation.answer}
+                    </div>
+                    ` : '<div class="text-sm text-gray-500 mt-2">等待医生回复中...</div>'}
+                    <div class="flex justify-end mt-2 space-x-2">
+                        <button class="text-primary hover:underline text-sm view-detail-btn" data-id="${consultation.id}">查看详情</button>
+                        ${consultation.status === 'completed' ? `
+                        <button class="text-gray-500 hover:underline text-sm delete-btn" data-id="${consultation.id}">删除</button>
+                        ` : ''}
+                    </div>
+                `;
+                
+                historyContainer.appendChild(item);
+            });
+            
+            // 添加事件监听
+            document.querySelectorAll('.view-detail-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    showConsultationDetail(this.dataset.id);
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    if (confirm('确定要删除这条咨询记录吗？')) {
+                        deleteConsultation(this.dataset.id);
+                    }
+                });
+            });
+        } catch (error) {
+            showError('加载咨询记录失败: ' + error.message);
+        }
+    }
+
+    // 加载我的医生
+    async function loadMyDoctors() {
+        const myDoctorsContainer = document.getElementById('myDoctorsList');
+        const recommendedContainer = document.getElementById('recommendedDoctors');
+        
+        myDoctorsContainer.innerHTML = '<div class="text-center py-4">加载我的医生中...</div>';
+        recommendedContainer.innerHTML = '<div class="text-center py-4">加载推荐医生中...</div>';
+        
+        try {
+            // 模拟我的医生数据
+            const myDoctors = [
+                {
+                    id: 1,
+                    name: '张医生',
+                    title: '主任医师',
+                    specialty: '心血管内科',
+                    hospital: '北京协和医院',
+                    lastConsult: '2024-01-15',
+                    isFollowing: true
+                },
+                {
+                    id: 2,
+                    name: '李医生',
+                    title: '副主任医师',
+                    specialty: '内分泌科',
+                    hospital: '上海瑞金医院',
+                    lastConsult: '2024-01-10',
+                    isFollowing: true
+                }
+            ];
+            
+            // 渲染我的医生
+            if (myDoctors.length === 0) {
+                myDoctorsContainer.innerHTML = '<div class="text-center py-4 text-gray-500">您还没有关注的医生</div>';
+            } else {
+                myDoctorsContainer.innerHTML = '';
+                myDoctors.forEach(doctor => {
+                    const doctorCard = document.createElement('div');
+                    doctorCard.className = 'my-doctor-card';
+                    doctorCard.innerHTML = `
+                        <div class="my-doctor-avatar">
+                            <i class="fas fa-user-md"></i>
+                        </div>
+                        <div class="my-doctor-info">
+                            <div class="font-medium">${doctor.name} - ${doctor.title}</div>
+                            <div class="text-sm text-gray-600">${doctor.specialty}</div>
+                            <div class="text-sm text-gray-500">${doctor.hospital}</div>
+                            <div class="text-xs text-gray-400 mt-1">上次咨询: ${doctor.lastConsult}</div>
+                        </div>
+                        <div class="my-doctor-actions">
+                            <button class="btn-sm btn-outline unfollow-btn" data-id="${doctor.id}">取消关注</button>
+                            <button class="btn-sm btn-primary-sm consult-btn" data-id="${doctor.id}">咨询</button>
+                        </div>
+                    `;
+                    myDoctorsContainer.appendChild(doctorCard);
+                });
+                
+                // 添加事件监听
+                document.querySelectorAll('.unfollow-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        if (confirm('确定要取消关注这位医生吗？')) {
+                            unfollowDoctor(this.dataset.id);
+                        }
+                    });
+                });
+                
+                document.querySelectorAll('.consult-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        // 切换到新咨询页面并选中该医生
+                        switchSection('new-consultation', document.querySelector('[data-section="new-consultation"]'));
+                        selectDoctor(this.dataset.id);
+                    });
+                });
+            }
+            
+            // 渲染推荐医生
+            const recommendedDoctors = mockDoctors.slice(0, 4);
+            recommendedContainer.innerHTML = '';
+            recommendedDoctors.forEach(doctor => {
+                const doctorCard = document.createElement('div');
+                doctorCard.className = 'doctor-card';
+                doctorCard.innerHTML = `
+                    <div class="doctor-avatar">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div class="doctor-info">
+                        <div class="doctor-name">${doctor.name} - ${doctor.title}</div>
+                        <div class="doctor-specialty">${doctor.specialty}</div>
+                        <div class="doctor-rating">
+                            ${generateStars(doctor.rating)}
+                            <span class="ml-1">(${doctor.ratingCount})</span>
+                        </div>
+                    </div>
+                `;
+                recommendedContainer.appendChild(doctorCard);
+            });
+        } catch (error) {
+            showError('加载医生数据失败: ' + error.message);
+        }
+    }
+
+    // 生成星级评分
+    function generateStars(rating) {
+        const stars = [];
+        for (let i = 1; i <= 5; i++) {
+            stars.push(`<i class="fas fa-star ${i <= rating ? 'star-filled' : 'star-empty'}"></i>`);
+        }
+        return stars.join('');
+    }
+
+    // 取消关注医生
+    function unfollowDoctor(doctorId) {
+        showSuccess('已取消关注');
+        loadMyDoctors();
+    }
+
+    // 删除咨询记录
+    function deleteConsultation(consultationId) {
+        showSuccess('咨询记录已删除');
+        loadConsultationHistory();
+    }
+
+    // 选中医生
+    function selectDoctor(doctorId) {
+        setTimeout(() => {
+            const doctorCard = document.querySelector(`.doctor-card[data-id="${doctorId}"]`);
+            if (doctorCard) {
+                document.querySelectorAll('.doctor-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                doctorCard.classList.add('selected');
+                doctorCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 100);
+    }
+
+    // 模拟医生数据
+    const mockDoctors = [
+        {
+            id: 1,
+            name: '张医生',
+            title: '主任医师',
+            specialty: '心血管内科',
+            rating: 4.8,
+            ratingCount: 128
+        },
+        {
+            id: 2,
+            name: '李医生',
+            title: '副主任医师',
+            specialty: '内分泌科',
+            rating: 4.9,
+            ratingCount: 96
+        },
+        {
+            id: 3,
+            name: '王医生',
+            title: '主任医师',
+            specialty: '神经内科',
+            rating: 4.7,
+            ratingCount: 156
+        },
+        {
+            id: 4,
+            name: '刘医生',
+            title: '主治医师',
+            specialty: '骨科',
+            rating: 4.6,
+            ratingCount: 78
+        }
+    ];
+
+    async function loadDoctors() {
+        try {
+            const doctorsList = document.getElementById('doctorsList');
+            doctorsList.innerHTML = '<div class="text-center py-4">加载医生列表中...</div>';
+
+            let doctors = [];
+            
+            try {
+                const response = await apiClient.getAvailableDoctors();
+                if (Array.isArray(response)) {
+                    doctors = response;
+                } else if (response && Array.isArray(response.data)) {
+                    doctors = response.data;
+                }
+            } catch (apiError) {
+                console.log('API请求失败，使用模拟数据:', apiError);
+                doctors = mockDoctors;
+            }
+
+            if (doctors.length === 0) {
+                doctorsList.innerHTML = '<div class="text-center py-4 text-gray-500">暂无可用医生</div>';
+                return;
+            }
+
+            doctorsList.innerHTML = '';
+            doctors.forEach(doctor => {
+                const doctorCard = document.createElement('div');
+                doctorCard.className = 'doctor-card';
+                doctorCard.dataset.id = doctor.id;
+
+                // 创建星级评价
+                const stars = [];
+                for (let i = 1; i <= 5; i++) {
+                    stars.push(`<i class="fas fa-star ${i <= doctor.rating ? 'star-filled' : 'star-empty'}"></i>`);
+                }
+
+                doctorCard.innerHTML = `
+                    <div class="doctor-avatar">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div class="doctor-info">
+                        <div class="doctor-name">${doctor.name} - ${doctor.title}</div>
+                        <div class="doctor-specialty">${doctor.specialty}</div>
+                        <div class="doctor-rating">
+                            ${stars.join('')}
+                            <span class="ml-1">(${doctor.ratingCount})</span>
+                        </div>
+                    </div>
+                `;
+
+                doctorCard.addEventListener('click', () => {
+                    document.querySelectorAll('.doctor-card').forEach(card => {
+                        card.classList.remove('selected');
+                    });
+                    doctorCard.classList.add('selected');
+                });
+
+                doctorsList.appendChild(doctorCard);
+            });
+        } catch (error) {
+            showError('加载医生列表失败: ' + error.message);
+        }
+    }
+
+    // 模拟咨询记录数据
+    const mockConsultations = [
+        {
+            id: 1,
+            created_at: '2024-01-15 14:30',
+            doctor_name: '张医生',
+            status: 'completed',
+            question: '最近血压有点高，平时需要注意什么？',
+            answer: '建议您定期监测血压，保持低盐饮食，适量运动，避免情绪激动。如果血压持续偏高，请及时就医调整用药。'
+        },
+        {
+            id: 2,
+            created_at: '2024-01-14 09:15',
+            doctor_name: '李医生',
+            status: 'completed',
+            question: '糖尿病患者可以吃什么水果？',
+            answer: '糖尿病患者可以选择低糖水果，如草莓、蓝莓、柚子、苹果等。建议在两餐之间食用，每次控制在100-150克左右，并监测血糖变化。'
+        },
+        {
+            id: 3,
+            created_at: '2024-01-13 16:45',
+            doctor_name: '王医生',
+            status: 'pending',
+            question: '最近经常头晕，应该挂什么科？',
+            answer: null
+        }
+    ];
+
+    async function loadRecentConsultations() {
+        try {
+            const recentContainer = document.getElementById('recentConsultations');
+            recentContainer.innerHTML = '<div class="text-center py-4">加载最近咨询记录中...</div>';
+
+            let consultations = [];
+            
+            try {
+                const response = await apiClient.getRecentConsultations();
+                if (Array.isArray(response)) {
+                    consultations = response;
+                } else if (response && Array.isArray(response.data)) {
+                    consultations = response.data;
+                }
+            } catch (apiError) {
+                console.log('API请求失败，使用模拟数据:', apiError);
+                consultations = mockConsultations;
+            }
+
+            if (consultations.length === 0) {
+                recentContainer.innerHTML = '<div class="text-center py-4 text-gray-500">暂无最近咨询记录</div>';
+                return;
+            }
+
+            recentContainer.innerHTML = '';
+            consultations.forEach(consultation => {
+                const item = document.createElement('div');
+                item.className = 'consultation-item';
+
+                item.innerHTML = `
+                    <div class="consultation-date">
+                        ${formatDateTime(consultation.created_at)} - ${consultation.doctor_name}
+                        <span class="status-tag ${consultation.status === 'completed' ? 'status-completed' : 'status-pending'} ml-2">
+                            ${consultation.status === 'completed' ? '已完成' : '待回复'}
+                        </span>
+                    </div>
+                    <div class="consultation-question">
+                        <strong>问题:</strong> ${consultation.question}
+                    </div>
+                    ${consultation.answer ? `
+                    <div class="consultation-answer mt-2">
+                        <strong>医生回复:</strong> ${consultation.answer}
+                    </div>
+                    ` : '<div class="text-sm text-gray-500 mt-2">等待医生回复中...</div>'}
+                `;
+
+                recentContainer.appendChild(item);
+            });
+        } catch (error) {
+            showError('加载最近咨询记录失败: ' + error.message);
+        }
+    }
+
+    async function submitConsultation() {
+        const selectedDoctor = document.querySelector('.doctor-card.selected');
+        const question = document.getElementById('consultationQuestion').value.trim();
+
+        if (!selectedDoctor) {
+            showError('请选择一位医生');
+            return;
+        }
+
+        if (!question) {
+            showError('请输入咨询问题');
+            return;
+        }
+
+        try {
+            const submitBtn = document.getElementById('submitConsultationBtn');
+            setButtonLoading(submitBtn, true);
+
+            const doctorId = selectedDoctor.dataset.id;
+            const response = await apiClient.submitConsultation(doctorId, question);
+
+            if (response.success) {
+                alert('咨询提交成功！医生会尽快回复您');
+                // 清空表单
+                document.getElementById('consultationQuestion').value = '';
+                // 重新加载最近咨询记录
+                await loadRecentConsultations();
+            } else {
+                throw new Error(response.message || '咨询提交失败');
+            }
+        } catch (error) {
+            showError('提交咨询失败: ' + error.message);
+        } finally {
+            const submitBtn = document.getElementById('submitConsultationBtn');
+            setButtonLoading(submitBtn, false);
+        }
+    }
+
+    function formatDateTime(dateString) {
+        if (!dateString) return '';
+        try {
+            const date = new Date(dateString);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}`;
+        } catch (e) {
+            return '';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // 设置头像下拉菜单
+        document.getElementById('avatarBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.getElementById('avatarDropdown').classList.toggle('show');
+        });
+
+        // 点击页面其他地方时隐藏下拉菜单
+        document.addEventListener('click', function() {
+            document.getElementById('avatarDropdown').classList.remove('show');
+        });
+
+        // 设置表单提交事件
+        document.getElementById('submitConsultationBtn').addEventListener('click', submitConsultation);
+
+        // 字数统计
+        const questionInput = document.getElementById('consultationQuestion');
+        const charCount = document.getElementById('charCount');
+        
+        questionInput.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+            if (this.value.length >= 500) {
+                charCount.classList.add('text-danger');
+            } else {
+                charCount.classList.remove('text-danger');
+            }
+        });
+
+        // 医生筛选和排序
+        document.getElementById('doctorFilter').addEventListener('change', function() {
+            filterAndSortDoctors();
+        });
+
+        document.getElementById('doctorSort').addEventListener('change', function() {
+            filterAndSortDoctors();
+        });
+
+        // 加载数据
+        loadDoctors();
+        loadRecentConsultations();
+    });
+
+    // 筛选和排序医生
+    function filterAndSortDoctors() {
+        const filterValue = document.getElementById('doctorFilter').value;
+        const sortValue = document.getElementById('doctorSort').value;
+        
+        let filteredDoctors = [...mockDoctors];
+        
+        // 筛选
+        if (filterValue !== 'all') {
+            filteredDoctors = filteredDoctors.filter(doctor => doctor.specialty === filterValue);
+        }
+        
+        // 排序
+        switch (sortValue) {
+            case 'rating':
+                filteredDoctors.sort((a, b) => b.rating - a.rating);
+                break;
+            case 'name':
+                filteredDoctors.sort((a, b) => a.name.localeCompare(b.name));
+                break;
+            case 'count':
+                filteredDoctors.sort((a, b) => b.ratingCount - a.ratingCount);
+                break;
+        }
+        
+        // 重新渲染医生列表
+        const doctorsList = document.getElementById('doctorsList');
+        doctorsList.innerHTML = '';
+        
+        if (filteredDoctors.length === 0) {
+            doctorsList.innerHTML = '<div class="text-center py-4 text-gray-500">暂无符合条件的医生</div>';
+            return;
+        }
+        
+        filteredDoctors.forEach(doctor => {
+            const doctorCard = document.createElement('div');
+            doctorCard.className = 'doctor-card';
+            doctorCard.dataset.id = doctor.id;
+
+            // 创建星级评价
+            const stars = [];
+            for (let i = 1; i <= 5; i++) {
+                stars.push(`<i class="fas fa-star ${i <= doctor.rating ? 'star-filled' : 'star-empty'}"></i>`);
+            }
+
+            doctorCard.innerHTML = `
+                <div class="doctor-avatar">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <div class="doctor-info">
+                    <div class="doctor-name">${doctor.name} - ${doctor.title}</div>
+                    <div class="doctor-specialty">${doctor.specialty}</div>
+                    <div class="doctor-rating">
+                        ${stars.join('')}
+                        <span class="ml-1">(${doctor.ratingCount})</span>
+                    </div>
+                </div>
+            `;
+
+            doctorCard.addEventListener('click', () => {
+                document.querySelectorAll('.doctor-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                doctorCard.classList.add('selected');
+            });
+
+            doctorsList.appendChild(doctorCard);
+        });
+    }
+
+    // 增强提交咨询功能
+    async function submitConsultation() {
+        const selectedDoctor = document.querySelector('.doctor-card.selected');
+        const question = document.getElementById('consultationQuestion').value.trim();
+        const attachReport = document.getElementById('attachReport').checked;
+        const urgentConsult = document.getElementById('urgentConsult').checked;
+
+        if (!selectedDoctor) {
+            showError('请选择一位医生');
+            return;
+        }
+
+        if (!question) {
+            showError('请输入咨询问题');
+            return;
+        }
+
+        try {
+            const submitBtn = document.getElementById('submitConsultationBtn');
+            setButtonLoading(submitBtn, true);
+
+            const doctorId = selectedDoctor.dataset.id;
+            
+            // 构建咨询数据
+            const consultationData = {
+                doctor_id: doctorId,
+                question: question,
+                attach_report: attachReport,
+                urgent: urgentConsult
+            };
+            
+            const response = await apiClient.submitConsultation(doctorId, question);
+
+            if (response.success) {
+                // 显示成功动画
+                const successNotification = document.createElement('div');
+                successNotification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 flex items-center';
+                successNotification.innerHTML = `
+                    <i class="ri-check-circle-line mr-2 text-xl"></i>
+                    <span>咨询提交成功！医生会尽快回复您</span>
+                `;
+                document.body.appendChild(successNotification);
+                
+                // 3秒后移除通知
+                setTimeout(() => {
+                    successNotification.style.opacity = '0';
+                    setTimeout(() => successNotification.remove(), 300);
+                }, 3000);
+                
+                // 清空表单
+                document.getElementById('consultationQuestion').value = '';
+                document.getElementById('charCount').textContent = '0';
+                document.getElementById('attachReport').checked = false;
+                document.getElementById('urgentConsult').checked = false;
+                
+                // 重新加载最近咨询记录
+                await loadRecentConsultations();
+            } else {
+                throw new Error(response.message || '咨询提交失败');
+            }
+        } catch (error) {
+            showError('提交咨询失败: ' + error.message);
+        } finally {
+            const submitBtn = document.getElementById('submitConsultationBtn');
+            setButtonLoading(submitBtn, false);
+        }
+    }
+
+    // 增强历史咨询记录显示
+    async function loadRecentConsultations() {
+        try {
+            const recentContainer = document.getElementById('recentConsultations');
+            recentContainer.innerHTML = '<div class="text-center py-4">加载最近咨询记录中...</div>';
+
+            let consultations = [];
+            
+            try {
+                const response = await apiClient.getRecentConsultations();
+                if (Array.isArray(response)) {
+                    consultations = response;
+                } else if (response && Array.isArray(response.data)) {
+                    consultations = response.data;
+                }
+            } catch (apiError) {
+                console.log('API请求失败，使用模拟数据:', apiError);
+                consultations = mockConsultations;
+            }
+
+            if (consultations.length === 0) {
+                recentContainer.innerHTML = '<div class="text-center py-4 text-gray-500">暂无最近咨询记录</div>';
+                return;
+            }
+
+            recentContainer.innerHTML = '';
+            consultations.forEach(consultation => {
+                const item = document.createElement('div');
+                item.className = 'consultation-item';
+                item.dataset.id = consultation.id;
+
+                item.innerHTML = `
+                    <div class="consultation-date">
+                        ${formatDateTime(consultation.created_at)} - ${consultation.doctor_name}
+                        <span class="status-tag ${consultation.status === 'completed' ? 'status-completed' : 'status-pending'} ml-2">
+                            ${consultation.status === 'completed' ? '已完成' : '待回复'}
+                        </span>
+                    </div>
+                    <div class="consultation-question">
+                        <strong>问题:</strong> ${consultation.question}
+                    </div>
+                    ${consultation.answer ? `
+                    <div class="consultation-answer mt-2">
+                        <strong>医生回复:</strong> ${consultation.answer}
+                    </div>
+                    ` : '<div class="text-sm text-gray-500 mt-2">等待医生回复中...</div>'}
+                    <div class="flex justify-end mt-2">
+                        <button class="text-primary hover:underline text-sm view-detail-btn" data-id="${consultation.id}">查看详情</button>
+                    </div>
+                `;
+
+                recentContainer.appendChild(item);
+            });
+            
+            // 添加查看详情按钮事件
+            document.querySelectorAll('.view-detail-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const consultationId = this.dataset.id;
+                    showConsultationDetail(consultationId);
+                });
+            });
+        } catch (error) {
+            showError('加载最近咨询记录失败: ' + error.message);
+        }
+    }
+
+    // 显示咨询详情
+    function showConsultationDetail(consultationId) {
+        // 查找咨询记录
+        const consultation = mockConsultations.find(c => c.id == consultationId);
+        if (!consultation) return;
+        
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-medium">咨询详情</h3>
+                    <button class="close-modal text-gray-500 hover:text-gray-700">
+                        <i class="ri-close-line text-xl"></i>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-sm text-gray-500">咨询时间</p>
+                        <p class="font-medium">${formatDateTime(consultation.created_at)}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">咨询医生</p>
+                        <p class="font-medium">${consultation.doctor_name}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">咨询状态</p>
+                        <p class="font-medium">${consultation.status === 'completed' ? '已完成' : '待回复'}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">咨询问题</p>
+                        <p class="font-medium">${consultation.question}</p>
+                    </div>
+                    ${consultation.answer ? `
+                    <div>
+                        <p class="text-sm text-gray-500">医生回复</p>
+                        <p class="font-medium">${consultation.answer}</p>
+                    </div>
+                    ` : '<div class="text-sm text-gray-500">等待医生回复中...</div>'}
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button class="close-modal px-6 py-2 bg-gray-200 text-gray-700 rounded-button hover:bg-gray-300 transition-colors">
+                        关闭
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // 关闭模态框
+        modal.querySelectorAll('.close-modal').forEach(button => {
+            button.addEventListener('click', function() {
+                modal.remove();
+            });
+        });
+        
+        // 点击模态框外部关闭
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+</script>
+</body>
+</html>

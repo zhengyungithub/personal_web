@@ -1,1 +1,16 @@
-{"projectId":"prj_sMmqr1uzu9rwinRKlW32pZrvxMRy","orgId":"team_QZ7aadmeSN8IyJyHxzrDjaag","projectName":"web-resume"}
+{
+  "projectId": "prj_JN3lWPaJAoPM8k0MAiJIHKK38GxS",
+  "orgId": "team_QZ7aadmeSN8IyJyHxzrDjaag",
+  "projectName": "web-resume",
+  "settings": {
+    "createdAt": 1774343523505,
+    "framework": null,
+    "devCommand": null,
+    "installCommand": null,
+    "buildCommand": null,
+    "outputDirectory": null,
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "24.x"
+  }
+}

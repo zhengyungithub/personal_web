@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康风险评估 - 乐龄生活</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7AA968',
+                        secondary: '#F4A460',
+                        error: '#ef4444'
+                    },
+                    borderRadius: {
+                        'none': '0px',
+                        'sm': '4px',
+                        DEFAULT: '8px',
+                        'md': '12px',
+                        'lg': '16px',
+                        'xl': '20px',
+                        '2xl': '24px',
+                        '3xl': '32px',
+                        'full': '9999px',
+                        'button': '8px'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            min-height: 1024px;
+            background-color: #F8F9FA;
+        }
+
+        .doctor-notes {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background-color: #f0fdf4;
+            border-radius: 0.5rem;
+            border: 1px solid #bbf7d0;
+        }
+
+        .doctor-notes-title {
+            font-weight: 600;
+            font-size: 1.125rem;
+            color: #166534;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .doctor-notes-content {
+            background-color: white;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .error-message {
+            color: #f5222d;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .nav-item {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: #6B8E51;
+            font-weight: 500;
+        }
+
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #6B8E51;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .menu-item:hover {
+            background-color: rgba(107, 142, 81, 0.1);
+        }
+
+        .menu-item.active {
+            background-color: rgba(107, 142, 81, 0.1);
+            color: #6B8E51;
+            font-weight: 500;
+        }
+
+        .risk-card {
+            transition: all 0.3s;
+        }
+        .risk-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        /* 图表容器样式 */
+        .chart-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        /* 风险等级标签 */
+        .risk-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .risk-low {
+            background-color: #E6F7E0;
+            color: #52C41A;
+        }
+        .risk-medium {
+            background-color: #FFF7E6;
+            color: #FA8C16;
+        }
+        .risk-high {
+            background-color: #FFECE6;
+            color: #F5222D;
+        }
+
+        /* 主要按钮样式 */
+        .bg-primary {
+            background-color: #6B8E51;
+        }
+        .text-primary {
+            color: #6B8E51;
+        }
+        .border-primary {
+            border-color: #6B8E51;
+        }
+
+        /* 按钮基础样式 */
+        .rounded-button {
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        /* 悬停效果 - 移除或简化 */
+        .bg-primary:hover {
+            background-color: #6B8E51;
+        }
+        .border-primary:hover {
+            background-color: #6B8E51;
+            color: white;
+        }
+
+        /* 头像下拉菜单样式 */
+        .avatar-dropdown {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+            width: 160px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 100;
+            display: none;
+        }
+        .avatar-dropdown.show {
+            display: block;
+        }
+        .avatar-dropdown-item {
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .avatar-dropdown-item:hover {
+            background-color: #f5f5f5;
+        }
+        .avatar-dropdown-item i {
+            margin-right: 8px;
+            width: 20px;
+            text-align: center;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化日期选择器
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').value = today;
+            document.getElementById('endDate').value = today;
+            
+            // 绑定日期范围查询按钮
+            document.getElementById('rangeConfirmBtn').addEventListener('click', searchByDateRange);
+            
+            // 初始化图表
+            initializeCharts();
+        });
+        
+        // 日期范围查询
+        function searchByDateRange() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (!startDate || !endDate) {
+                alert('请选择开始日期和结束日期');
+                return;
+            }
+            
+            if (new Date(startDate) > new Date(endDate)) {
+                alert('开始日期不能晚于结束日期');
+                return;
+            }
+            
+            // 显示图表区域
+            document.getElementById('healthDataChartSection').classList.remove('hidden');
+            
+            // 生成模拟数据
+            const data = generateDateRangeData(startDate, endDate);
+            
+            // 渲染图表
+            renderBloodPressureChart(data);
+            renderBloodSugarChart(data);
+        }
+        
+        // 生成日期范围内的模拟健康数据
+        function generateDateRangeData(startDate, endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const data = {
+                dates: [],
+                systolic: [],
+                diastolic: [],
+                bloodSugar: []
+            };
+            
+            let current = new Date(start);
+            while (current <= end) {
+                data.dates.push(current.toISOString().split('T')[0]);
+                data.systolic.push(Math.floor(Math.random() * 30) + 110); // 110-140
+                data.diastolic.push(Math.floor(Math.random() * 20) + 70); // 70-90
+                data.bloodSugar.push((Math.random() * 2 + 4).toFixed(1)); // 4-6
+                current.setDate(current.getDate() + 1);
+            }
+            
+            return data;
+        }
+        
+        // 初始化图表
+        function initializeCharts() {
+            // 血压图表
+            const bpCtx = document.getElementById('bloodPressureChart').getContext('2d');
+            window.bloodPressureChart = new Chart(bpCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '收缩压',
+                        data: [],
+                        borderColor: '#FF6384',
+                        backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: '舒张压',
+                        data: [],
+                        borderColor: '#36A2EB',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'mmHg'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 血糖图表
+            const bsCtx = document.getElementById('bloodSugarChart').getContext('2d');
+            window.bloodSugarChart = new Chart(bsCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '血糖',
+                        data: [],
+                        borderColor: '#4BC0C0',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'mmol/L'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 渲染血压图表
+        function renderBloodPressureChart(data) {
+            window.bloodPressureChart.data.labels = data.dates;
+            window.bloodPressureChart.data.datasets[0].data = data.systolic;
+            window.bloodPressureChart.data.datasets[1].data = data.diastolic;
+            window.bloodPressureChart.update();
+        }
+        
+        // 渲染血糖图表
+        function renderBloodSugarChart(data) {
+            window.bloodSugarChart.data.labels = data.dates;
+            window.bloodSugarChart.data.datasets[0].data = data.bloodSugar;
+            window.bloodSugarChart.update();
+        }
+    </script>
+</head>
+
+<body>
+<header class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
+    <nav class="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-8">
+            <a href="/" class="text-2xl font-['Pacifico'] text-primary">乐龄生活</a>
+            <div class="hidden lg:flex space-x-6">
+                <a href="/" class="nav-link text-gray-600 hover:text-primary transition-colors">首页</a>
+                <div class="dropdown relative">
+                    <a href="日常购物.html" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">生活服务</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">日常购物</a>
+                        <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">家政服务</a>
+                        <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">维修服务</a>
+                    </div>
+                </div>
+                <div class="dropdown relative">
+                    <a href="#" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">健康管理</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="/健康档案管理" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">健康档案管理</a>
+                        <a href="/健康资讯" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">健康资讯</a>
+                    </div>
+                </div>
+                <div class="dropdown relative">
+                    <a href="#" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">社交娱乐</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="社区交流.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">社区交流</a>
+                        <a href="兴趣小组.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">兴趣小组</a>
+                        <a href="文化娱乐.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">文化娱乐</a>
+                    </div>
+                </div>
+                <a href="防诈骗提醒.html" class="nav-link text-gray-600 hover:text-primary transition-colors">防诈骗提醒</a>
+                <div class="dropdown relative">
+                    <a href="#" class="nav-link text-gray-600 hover:text-primary focus:outline-none dropdown-toggle transition-colors">信息管理</a>
+                    <div class="dropdown-content absolute top-full left-0 mt-1 w-48 bg-white shadow-lg rounded-lg border border-gray-100 hidden z-50">
+                        <a href="通知公告.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">通知公告</a>
+                        <a href="服务评价与反馈.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">服务评价与反馈</a>
+                        <a href="费用管理.html" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">费用管理</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="errorAlert" class="hidden fixed top-20 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <span class="font-bold">错误!</span>
+            <span id="errorMessage"></span>
+            <span class="absolute top-0 bottom-0 right-0 px-4 py-3" onclick="document.getElementById('errorAlert').classList.add('hidden')">
+                <i class="fas fa-times"></i>
+            </span>
+        </div>
+        <div class="flex items-center space-x-6">
+            <div class="relative">
+                <input type="search" placeholder="搜索商品" class="search-input w-64 h-10 pl-10 pr-4 rounded-full border border-gray-200 focus:outline-none focus:border-primary text-sm">
+                <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            </div>
+            <button class="w-10 h-10 flex items-center justify-center relative cursor-pointer" id="cartBtn">
+                <i class="ri-shopping-cart-line text-xl text-gray-600"></i>
+                <span class="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-xs rounded-full flex items-center justify-center">2</span>
+            </button>
+            <div class="relative">
+                <button id="avatarBtn" class="w-10 h-10 flex items-center justify-center cursor-pointer">
+                    <i class="ri-user-line text-xl text-gray-600"></i>
+                </button>
+                <!-- 头像下拉菜单 -->
+                <div id="avatarDropdown" class="avatar-dropdown">
+                    <div class="avatar-dropdown-item" onclick="showProfile()">
+                        <i class="ri-user-line"></i>
+                        <span>个人信息</span>
+                    </div>
+                    <div class="avatar-dropdown-item" onclick="logout()">
+                        <i class="ri-logout-box-r-line"></i>
+                        <span>退出登录</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<div class="w-[1440px] mx-auto pt-16">
+    <main class="flex min-h-[calc(100vh-64px)]">
+        <aside class="w-64 bg-white border-r p-4">
+            <div class="text-lg font-medium mb-4">健康档案管理</div>
+            <div class="space-y-1">
+                <a href="健康数据录入.html" class="menu-item">
+                    <i class="fas fa-file-medical mr-3 text-gray-400"></i>
+                    <span>健康数据录入</span>
+                </a>
+                <a href="健康数据管理.html" class="menu-item">
+                    <i class="fas fa-folder-open mr-3 text-gray-400"></i>
+                    <span>健康数据管理</span>
+                </a>
+                <a href="健康趋势分析.html" class="menu-item">
+                    <i class="fas fa-chart-line mr-3 text-gray-400"></i>
+                    <span>健康趋势分析</span>
+                </a>
+                <a href="风险健康评估.html" class="menu-item active">
+                    <i class="fas fa-clipboard-list mr-3"></i>
+                    <span>风险健康评估</span>
+                </a>
+                <a href="在线咨询.html" class="menu-item">
+                    <i class="fas fa-comment-medical mr-3 text-gray-400"></i>
+                    <span>在线咨询</span>
+                </a>
+                <a href="健康资讯推送.html" class="menu-item">
+                    <i class="fas fa-newspaper mr-3 text-gray-400"></i>
+                    <span>健康资讯推送</span>
+                </a>
+            </div>
+        </aside>
+
+        <div class="flex-1 p-8">
+            <div class="mb-8">
+                <h1 class="text-2xl font-medium mb-2">健康风险评估报告</h1>
+                <p class="text-gray-500">根据您的健康数据，为您生成专业的健康风险评估报告</p>
+
+                <!-- 日期选择和报告生成区域 -->
+            <div class="mt-4 space-y-4">
+                <div class="flex flex-wrap items-center gap-4">
+                    <div>
+                        <label for="datepicker" class="text-gray-600">选择日期:</label>
+                        <select id="datepicker" class="ml-2 px-3 py-2 border border-gray-300 rounded-button focus:outline-none focus:border-primary">
+                            <option value="">-- 请选择日期 --</option>
+                            <!-- 日期选项将通过JavaScript动态加载 -->
+                        </select>
+                    </div>
+                    <div id="recordSelectorContainer" class="hidden">
+                        <label for="recordSelector" class="text-gray-600">选择记录:</label>
+                        <select id="recordSelector" class="ml-2 px-3 py-2 border border-gray-300 rounded-button focus:outline-none focus:border-primary">
+                            <option value="">-- 请选择记录 --</option>
+                            <!-- 记录选项将通过JavaScript动态加载 -->
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-gray-600">日期范围:</span>
+                        <input type="date" id="startDate" class="px-3 py-2 border border-gray-300 rounded-button focus:outline-none focus:border-primary">
+                        <span class="text-gray-400">至</span>
+                        <input type="date" id="endDate" class="px-3 py-2 border border-gray-300 rounded-button focus:outline-none focus:border-primary">
+                        <button id="rangeConfirmBtn" class="px-4 py-2 bg-primary text-white hover:bg-primary/90 transition-colors duration-300 rounded-button whitespace-nowrap">
+                            <i class="fas fa-calendar-check mr-1"></i>查询
+                        </button>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-4">
+                    <button id="confirmDateBtn" class="px-6 py-2 bg-primary text-white hover:bg-primary/90 transition-colors duration-300 rounded-button whitespace-nowrap">
+                        <i class="fas fa-check mr-2"></i>确定
+                    </button>
+                    <button id="generateReportBtn" class="px-6 py-2 bg-primary text-white hover:bg-primary/90 transition-colors duration-300 rounded-button whitespace-nowrap">
+                        <i class="fas fa-file-medical mr-2"></i>生成报告
+                    </button>
+                    <button id="viewHistoryBtn" class="px-6 py-2 border border-primary text-primary hover:bg-primary hover:text-white transition-colors duration-300 rounded-button whitespace-nowrap">
+                        <i class="fas fa-history mr-2"></i>查看历史报告
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 健康数据趋势图表 -->
+            <div class="mt-8 bg-white p-6 rounded-lg shadow-sm hidden" id="healthDataChartSection">
+                <h3 class="text-lg font-medium mb-4">健康数据趋势</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="text-md font-medium mb-2">血压趋势</h4>
+                        <div class="h-64">
+                            <canvas id="bloodPressureChart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-md font-medium mb-2">血糖趋势</h4>
+                        <div class="h-64">
+                            <canvas id="bloodSugarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+            <!-- 当前报告显示区域 -->
+            <div class="bg-white p-6 rounded-lg mb-8 hidden" id="currentReportSection">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium">健康风险评估报告</h3>
+                    <div class="text-sm text-gray-500" id="reportDate"></div>
+                </div>
+
+                <!-- 风险等级显示 -->
+                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="flex-1">
+                            <h4 class="font-medium">总体健康风险等级</h4>
+                            <div class="mt-2">
+                                <span class="risk-tag" id="riskLevelTag">未评估</span>
+                                <span class="text-gray-600 ml-2" id="riskDescription"></span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-500">评估时间</div>
+                            <div class="text-sm font-medium" id="assessmentTime"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 健康评估区域 -->
+                <div class="space-y-6 mb-6" id="healthAssessmentSection">
+                    <!-- 动态生成的评估内容会放在这里 -->
+                </div>
+
+                <!-- 健康建议区域 -->
+                <div class="mt-8 p-6 bg-blue-50 rounded-lg border border-blue-100">
+                    <h4 class="font-medium text-lg text-blue-800 mb-4">
+                        <i class="fas fa-lightbulb mr-2"></i>健康建议
+                    </h4>
+                    <div id="generalHealthAdvice">
+                        <!-- 通用健康建议将在这里显示 -->
+                    </div>
+                </div>
+                <div class="doctor-notes">
+                    <div class="doctor-notes-title">
+                        <i class="fas fa-user-md mr-2"></i>医生备注
+                    </div>
+                    <div id="doctorNotesContent" class="doctor-notes-content">
+                        <!-- 动态显示医生备注 -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg mb-8 hidden" id="historyReportSection">
+                <h3 class="text-lg font-medium mb-4">历史风险评估报告</h3>
+                <button id="clearHistoryBtn" class="px-6 py-2 bg-red-500 text-white hover:bg-red-600 transition-colors duration-300 rounded-button whitespace-nowrap">
+                    <i class="fas fa-trash-alt mr-2"></i>清空历史记录
+                </button>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">评估日期</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">记录日期</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">风险等级</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">主要问题</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="historyReportList">
+                        <!-- 历史报告数据将通过JavaScript动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-4">
+                <button id="downloadReportBtn" class="px-6 py-2 border border-primary text-primary hover:bg-primary hover:text-white transition-colors duration-300 rounded-button whitespace-nowrap">
+                    <i class="fas fa-download mr-2"></i>下载报告
+                </button>
+                <a href="在线咨询.html" class="px-6 py-2 bg-primary text-white hover:bg-primary/90 transition-colors duration-300 rounded-button whitespace-nowrap inline-flex items-center">
+                    <i class="fas fa-user-md mr-2"></i>咨询医生
+                </a>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // 模拟数据
+    const mockData = {
+        dates: [
+            { recordDate: '2026-03-15', displayDate: '2026年3月15日' },
+            { recordDate: '2026-03-10', displayDate: '2026年3月10日' },
+            { recordDate: '2026-03-05', displayDate: '2026年3月5日' }
+        ],
+        healthRecords: {
+            '2026-03-15': {
+                systolic_blood_pressure: 125,
+                diastolic_blood_pressure: 85,
+                blood_sugar: 5.8,
+                weight: 68,
+                height: 175
+            },
+            '2026-03-10': {
+                systolic_blood_pressure: 130,
+                diastolic_blood_pressure: 90,
+                blood_sugar: 6.2,
+                weight: 69,
+                height: 175
+            },
+            '2026-03-05': {
+                systolic_blood_pressure: 120,
+                diastolic_blood_pressure: 80,
+                blood_sugar: 5.5,
+                weight: 67,
+                height: 175
+            }
+        },
+        historyReports: [
+            {
+                id: 1,
+                assessmentDate: '2026-03-15T10:30:00',
+                recordDate: '2026-03-15',
+                riskLevel: 'low',
+                riskDescription: '血压和血糖均在正常范围内，体重指数正常',
+                doctorNotes: '建议保持健康的生活方式，定期体检'
+            },
+            {
+                id: 2,
+                assessmentDate: '2026-03-10T09:15:00',
+                recordDate: '2026-03-10',
+                riskLevel: 'medium',
+                riskDescription: '血压略高，血糖轻微超标',
+                doctorNotes: '建议减少盐分摄入，增加运动量'
+            }
+        ]
+    };
+
+    // 封装 API 调用的函数
+    const apiClient = {
+        baseUrl: '/风险健康评估',
+        token: 'mock_token',
+        maxRetries: 3,
+
+        async fetchAvailableDates() {
+            // 模拟获取可用日期
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    resolve(mockData.dates);
+                }, 300);
+            });
+        },
+
+        async generateHealthReport(recordDate, healthData) {
+            // 模拟生成健康报告
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const reportId = Math.floor(Math.random() * 1000);
+                    const assessmentDate = new Date().toISOString();
+                    
+                    // 根据健康数据生成风险评估
+                    let riskLevel = 'low';
+                    let riskDescription = '健康状况良好';
+                    let bloodPressureAssessment = '正常';
+                    let bloodSugarAssessment = '正常';
+                    let bmiAssessment = '正常';
+                    
+                    // 计算BMI
+                    const bmi = healthData.weight / Math.pow(healthData.height / 100, 2);
+                    
+                    // 评估血压
+                    if (healthData.systolicBloodPressure >= 140 || healthData.diastolicBloodPressure >= 90) {
+                        riskLevel = 'high';
+                        bloodPressureAssessment = '高血压';
+                        riskDescription = '血压偏高，需要注意';
+                    } else if (healthData.systolicBloodPressure >= 130 || healthData.diastolicBloodPressure >= 85) {
+                        if (riskLevel !== 'high') riskLevel = 'medium';
+                        bloodPressureAssessment = '血压略高';
+                        if (riskDescription === '健康状况良好') riskDescription = '血压略高，建议调整生活方式';
+                    }
+                    
+                    // 评估血糖
+                    if (healthData.bloodSugar >= 7.0) {
+                        riskLevel = 'high';
+                        bloodSugarAssessment = '高血糖';
+                        if (riskDescription === '健康状况良好') riskDescription = '血糖偏高，需要注意';
+                    } else if (healthData.bloodSugar >= 6.1) {
+                        if (riskLevel !== 'high') riskLevel = 'medium';
+                        bloodSugarAssessment = '血糖略高';
+                        if (riskDescription === '健康状况良好') riskDescription = '血糖略高，建议调整饮食';
+                    }
+                    
+                    // 评估BMI
+                    if (bmi >= 28) {
+                        riskLevel = 'high';
+                        bmiAssessment = '肥胖';
+                        if (riskDescription === '健康状况良好') riskDescription = '体重超标，需要减重';
+                    } else if (bmi >= 24) {
+                        if (riskLevel !== 'high') riskLevel = 'medium';
+                        bmiAssessment = '超重';
+                        if (riskDescription === '健康状况良好') riskDescription = '体重略重，建议适当运动';
+                    } else if (bmi < 18.5) {
+                        if (riskLevel !== 'high') riskLevel = 'medium';
+                        bmiAssessment = '体重偏轻';
+                        if (riskDescription === '健康状况良好') riskDescription = '体重偏轻，建议增加营养';
+                    }
+                    
+                    // 生成健康建议
+                    const recommendations = [];
+                    if (bloodPressureAssessment !== '正常') {
+                        recommendations.push('减少盐分摄入，每日盐摄入量不超过5克');
+                        recommendations.push('保持规律的有氧运动，每周至少150分钟');
+                    }
+                    if (bloodSugarAssessment !== '正常') {
+                        recommendations.push('控制碳水化合物摄入，选择低GI食物');
+                        recommendations.push('定期监测血糖变化');
+                    }
+                    if (bmiAssessment === '肥胖') {
+                        recommendations.push('制定合理的减重计划，每周减重0.5-1公斤');
+                        recommendations.push('增加运动量，每天至少30分钟');
+                    } else if (bmiAssessment === '超重') {
+                        recommendations.push('适当控制饮食，增加运动量');
+                    } else if (bmiAssessment === '体重偏轻') {
+                        recommendations.push('增加营养摄入，多吃富含蛋白质的食物');
+                        recommendations.push('适当进行力量训练，增加肌肉量');
+                    }
+                    recommendations.push('保持良好的作息习惯，保证充足的睡眠');
+                    recommendations.push('定期进行健康体检，监测身体状况');
+                    
+                    const report = {
+                        id: reportId,
+                        assessmentDate: assessmentDate,
+                        recordDate: recordDate,
+                        riskLevel: riskLevel,
+                        riskDescription: riskDescription,
+                        doctorNotes: '根据您的健康数据，我们为您提供了以下评估和建议。如有疑问，请咨询医生。',
+                        reportContent: {
+                            riskLevel: riskLevel,
+                            riskDescription: riskDescription,
+                            systolicBloodPressure: healthData.systolicBloodPressure,
+                            diastolicBloodPressure: healthData.diastolicBloodPressure,
+                            bloodSugar: healthData.bloodSugar,
+                            bmiValue: bmi.toFixed(1),
+                            bloodPressureAssessment: bloodPressureAssessment,
+                            bloodSugarAssessment: bloodSugarAssessment,
+                            bmiAssessment: bmiAssessment,
+                            recommendations: recommendations
+                        }
+                    };
+                    
+                    // 添加到历史报告
+                    mockData.historyReports.unshift(report);
+                    
+                    resolve({ data: report });
+                }, 500);
+            });
+        },
+
+        async getHealthRecordByDate(date) {
+            // 模拟获取健康记录
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const record = mockData.healthRecords[date];
+                    if (record) {
+                        resolve(record);
+                    } else {
+                        throw new Error('未找到该日期的健康记录');
+                    }
+                }, 200);
+            });
+        },
+
+        async getHealthHistory() {
+            // 模拟获取历史报告
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    resolve({ data: mockData.historyReports });
+                }, 200);
+            });
+        },
+
+        async getReportDetail(reportId) {
+            // 模拟获取报告详情
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const report = mockData.historyReports.find(r => r.id == reportId);
+                    if (report) {
+                        // 确保报告内容格式正确
+                        if (!report.parsedContent) {
+                            report.parsedContent = report.reportContent || {
+                                riskDescription: report.riskDescription,
+                                bloodPressureAssessment: '未评估',
+                                bloodSugarAssessment: '未评估',
+                                bmiAssessment: '未评估',
+                                recommendations: ['请咨询医生获取详细建议']
+                            };
+                        }
+                        resolve({ data: report });
+                    } else {
+                        throw new Error('报告不存在');
+                    }
+                }, 200);
+            });
+        },
+
+
+
+        async deleteReport(reportId) {
+            // 模拟删除报告
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const index = mockData.historyReports.findIndex(r => r.id == reportId);
+                    if (index !== -1) {
+                        mockData.historyReports.splice(index, 1);
+                        resolve({ success: true, message: '报告删除成功' });
+                    } else {
+                        resolve({ success: true, message: '报告已被删除' });
+                    }
+                }, 200);
+            });
+        },
+
+        async clearHistory() {
+            // 模拟清空历史记录
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    mockData.historyReports = [];
+                    resolve({ success: true, message: '历史记录已清空' });
+                }, 200);
+            });
+        },
+
+        async retryFetch(url, options = {}, retries = 0) {
+            // 模拟网络请求
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    reject(new Error('模拟网络请求失败'));
+                }, 100);
+            });
+        }
+    };
+
+    function showError(message) {
+        const errorAlert = document.getElementById('errorAlert');
+        const errorMessage = document.getElementById('errorMessage');
+
+        if (errorAlert && errorMessage) {
+            // Format validation errors with line breaks
+            const formattedMessage = message.replace(/;/g, ';<br>');
+            errorMessage.innerHTML = formattedMessage;
+            errorAlert.classList.remove('hidden');
+
+            // Auto-hide after 8 seconds for longer messages
+            setTimeout(() => errorAlert.classList.add('hidden'), 8000);
+        } else {
+            alert(message);
+        }
+    }
+
+    function formatDate(date) {
+        const dateObj = new Date(date);
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function setButtonLoading(button, isLoading) {
+        if (isLoading) {
+            button.innerHTML = '<span class="loading-spinner"></span> ' + button.textContent.trim();
+            button.disabled = true;
+        } else {
+            const icon = button.id.includes('generate') ? 'fa-file-medical' :
+                button.id.includes('history') ? 'fa-history' :
+                    button.id.includes('confirm') ? 'fa-check' :
+                        button.id.includes('download') ? 'fa-download' : '';
+            button.innerHTML = icon ? `<i class="fas ${icon} mr-2"></i>${button.textContent.trim()}` : button.textContent;
+            button.disabled = false;
+        }
+    }
+
+    function showProfile() {
+        window.location.href = '/profile';
+    }
+
+    function logout() {
+        if (confirm('确定要退出登录吗？')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userId');
+            window.location.href = "/登录";
+        }
+    }
+
+    async function downloadReport(reportId) {
+        // 优先使用传入的reportId（如历史报告点击），否则使用当前报告ID
+        const targetReportId = reportId || currentReportId;
+
+        if (!targetReportId) {
+            showError('请先选择或生成一份报告'); // 优化错误提示
+            return;
+        }
+
+        try {
+            const downloadReportBtn = document.getElementById('downloadReportBtn');
+            setButtonLoading(downloadReportBtn, true);
+
+            const url = `${apiClient.baseUrl}/download/${targetReportId}`;
+            const token = localStorage.getItem('token');
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/pdf' // 明确请求PDF格式
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`下载失败，状态码: ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const urlBlob = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = urlBlob;
+            a.download = `健康风险评估报告_${targetReportId}.pdf`; // 包含报告ID的文件名
+            a.click();
+            URL.revokeObjectURL(urlBlob);
+
+        } catch (error) {
+            showError('下载报告失败: ' + error.message);
+        } finally {
+            const downloadReportBtn = document.getElementById('downloadReportBtn');
+            setButtonLoading(downloadReportBtn, false);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const datepicker = document.getElementById('datepicker');
+        const confirmDateBtn = document.getElementById('confirmDateBtn');
+        const generateReportBtn = document.getElementById('generateReportBtn');
+        const viewHistoryBtn = document.getElementById('viewHistoryBtn');
+        const currentReportSection = document.getElementById('currentReportSection');
+        const historyReportSection = document.getElementById('historyReportSection');
+        const reportDate = document.getElementById('reportDate');
+        const riskLevelTag = document.getElementById('riskLevelTag');
+        const riskDescription = document.getElementById('riskDescription');
+        const assessmentTime = document.getElementById('assessmentTime');
+        const healthAssessmentSection = document.getElementById('healthAssessmentSection');
+        const generalHealthAdvice = document.getElementById('generalHealthAdvice');
+        const historyReportList = document.getElementById('historyReportList');
+        const downloadReportBtn = document.getElementById('downloadReportBtn');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+        let currentReportId = null;
+
+        init();
+
+        async function init() {
+            setupEventListeners();
+            await fetchAvailableDates();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('avatarBtn')?.addEventListener('click', toggleAvatarDropdown);
+            document.getElementById('avatarBtn2')?.addEventListener('click', toggleAvatarDropdown);
+
+            confirmDateBtn.addEventListener('click', checkAndViewReport);
+            generateReportBtn.addEventListener('click', generateReport);
+            viewHistoryBtn.addEventListener('click', viewHistoryReports);
+            downloadReportBtn.addEventListener('click', () => downloadReport(currentReportId));
+            clearHistoryBtn.addEventListener('click', clearHistoryReports);
+            
+            // 新增日期范围查询按钮事件
+            const rangeConfirmBtn = document.getElementById('rangeConfirmBtn');
+            if (rangeConfirmBtn) {
+                rangeConfirmBtn.addEventListener('click', searchByDateRange);
+            }
+
+            // 添加历史报告列表的事件委托
+            historyReportList.addEventListener('click', async (e) => {
+                const target = e.target.closest('.view-btn, .delete-btn');
+                if (!target) return;
+
+                const reportId = target.dataset.id;
+                if (!reportId) {
+                    console.error('找不到报告ID');
+                    return;
+                }
+
+                try {
+                    if (target.classList.contains('view-btn')) {
+                        await handleViewReport(reportId);
+                    } else if (target.classList.contains('delete-btn')) {
+                        await handleDeleteReport(reportId);
+                    }
+                } catch (error) {
+                    showError(error.message);
+                }
+            });
+        }
+
+        function toggleAvatarDropdown(e) {
+            e.stopPropagation();
+            const dropdown = e.target.closest('button').nextElementSibling;
+            dropdown?.classList.toggle('show');
+        }
+
+        async function fetchAvailableDates() {
+            try {
+                console.log('开始获取可用日期...');
+                const response = await apiClient.fetchAvailableDates();
+                console.log('收到响应:', response);
+                // 检查响应结构
+                if (!response) {
+                    throw new Error('未收到服务器响应');
+                }
+
+                // 处理不同的响应格式
+                let dates = [];
+                if (Array.isArray(response)) {
+                    dates = response;
+                } else if (response && Array.isArray(response.data)) {
+                    dates = response.data;
+                } else {
+                    throw new Error('服务器返回的数据格式不正确');
+                }
+
+                populateDateDropdown(dates);
+            } catch (error) {
+                console.error('获取日期失败:', error);
+                showError('获取健康记录日期失败: ' + error.message);
+
+            }
+        }
+
+        function populateDateDropdown(dates) {
+            const datepicker = document.getElementById('datepicker');
+            datepicker.innerHTML = '<option value="">-- 请选择日期 --</option>';
+
+            if (!Array.isArray(dates)) {
+                showError('日期数据格式不正确');
+                return;
+            }
+
+            dates.forEach(dateItem => {
+                // 兼容不同响应格式
+                const dateValue = dateItem.recordDate || dateItem;
+                const displayText = dateItem.displayDate || formatDateForDisplay(dateValue);
+
+                const option = document.createElement('option');
+                option.value = dateValue;
+                option.textContent = displayText;
+                datepicker.appendChild(option);
+            });
+        }
+
+        // 格式化日期显示
+        function formatDateForDisplay(dateString) {
+            if (!dateString) return '未指定日期';
+
+            try {
+                // 尝试解析ISO格式 (YYYY-MM-DD)
+                if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+                    const parts = dateString.split('-');
+                    return `${parts[0]}年${parseInt(parts[1])}月${parseInt(parts[2])}日`;
+                }
+
+                // 尝试解析日期对象
+                const date = new Date(dateString);
+                if (!isNaN(date.getTime())) {
+                    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+                }
+
+                return dateString; // 返回原始字符串
+            } catch (e) {
+                console.error('日期格式化错误:', e);
+                return dateString;
+            }
+        }
+
+        function displayHealthReport(rawReport) {
+            const report = preprocessReportData(rawReport);
+            const content = report.parsedContent;
+
+            try {
+                // 风险等级处理
+                const riskLevel = content.riskLevel || 'unknown';
+                setRiskLevel(riskLevel);
+
+                // 基础信息显示
+                document.getElementById('reportDate').textContent =
+                    formatDateForDisplay(report.recordDate || new Date());
+                document.getElementById('assessmentTime').textContent =
+                    formatDateTime(report.assessmentDate || new Date());
+                document.getElementById('riskDescription').textContent =
+                    content.riskDescription || '暂无风险描述';
+                document.getElementById('doctorNotesContent').textContent =
+                    report.doctorNotes || '暂无医生备注';
+
+                // 健康数据展示
+                const healthDataHtml = [
+                    createHealthDataItem(
+                        '血压评估',
+                        'fas fa-heartbeat',
+                        content.systolicBloodPressure,
+                        content.diastolicBloodPressure,
+                        'mmHg',
+                        content.bloodPressureAssessment
+                    ),
+                    createHealthDataItem(
+                        '血糖评估',
+                        'fas fa-tint',
+                        content.bloodSugar,
+                        null,
+                        'mmol/L',
+                        content.bloodSugarAssessment
+                    ),
+                    createHealthDataItem(
+                        '体重评估',
+                        'fas fa-weight',
+                        content.bmiValue,
+                        null,
+                        '',
+                        content.bmiAssessment
+                    )
+                ].join('');
+
+                document.getElementById('healthAssessmentSection').innerHTML = healthDataHtml;
+
+                // 健康建议处理
+                const adviceContainer = document.getElementById('generalHealthAdvice');
+                if (Array.isArray(content.recommendations)) {
+                    adviceContainer.innerHTML = content.recommendations.length > 0
+                        ? `<ul class="list-disc list-inside space-y-2 text-blue-700">
+                    ${content.recommendations.map(adv => `<li>${escapeHtml(adv)}</li>`).join('')}
+                   </ul>`
+                        : '<p class="text-gray-500">暂无具体建议</p>';
+                } else {
+                    adviceContainer.innerHTML = '<p class="text-gray-500">建议数据格式异常</p>';
+                }
+
+                // 显示报告区域
+                document.getElementById('currentReportSection').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('报告展示失败:', error, report);
+                showError(`报告展示失败: ${error.message}`);
+                document.getElementById('healthAssessmentSection').innerHTML = `
+            <div class="text-red-500 p-4 border border-red-200 rounded">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                报告数据渲染异常，请尝试重新生成
+            </div>
+        `;
+            }
+        }
+
+// 辅助函数：创建健康数据项
+        function createHealthDataItem(title, icon, value1, value2, unit, assessment) {
+            const displayValue1 = (value1 !== null && value1 !== undefined)
+                ? typeof value1 === 'number' ? value1.toFixed(1) : value1
+                : '未测量';
+
+            const displayValue2 = (value2 !== null && value2 !== undefined)
+                ? typeof value2 === 'number' ? value2.toFixed(1) : value2
+                : '';
+
+            const separator = displayValue2 ? '/' : '';
+            const assessmentText = assessment || '未评估';
+
+            return `
+        <div class="flex items-start space-x-4 mb-4">
+            <div class="w-8 h-8 bg-primary bg-opacity-10 rounded-lg flex items-center justify-center">
+                <i class="${icon} text-primary"></i>
+            </div>
+            <div class="flex-1">
+                <h4 class="font-medium mb-1">${title}</h4>
+                <p class="text-gray-600">
+                    ${displayValue1}${separator}${displayValue2} ${unit} - ${assessmentText}
+                </p>
+            </div>
+        </div>
+    `;
+        }
+
+// 简单的HTML转义
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.toString()
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+        function preprocessReportData(report) {
+            try {
+                // 深度拷贝原始报告避免污染
+                const processed = JSON.parse(JSON.stringify(report));
+
+                // 确保parsedContent存在
+                if (!processed.parsedContent) {
+                    // 尝试从reportContent解析
+                    if (processed.reportContent) {
+                        try {
+                            processed.parsedContent = typeof processed.reportContent === 'string'
+                                ? JSON.parse(processed.reportContent)
+                                : processed.reportContent;
+                        } catch (e) {
+                            console.warn('报告内容解析失败，使用空对象', e);
+                            processed.parsedContent = {};
+                        }
+                    } else {
+                        processed.parsedContent = {};
+                    }
+                }
+
+                // 确保关键字段存在
+                const requiredFields = [
+                    'riskDescription', 'bloodPressureAssessment',
+                    'bloodSugarAssessment', 'bmiAssessment', 'recommendations'
+                ];
+
+                requiredFields.forEach(field => {
+                    if (!processed.parsedContent[field]) {
+                        processed.parsedContent[field] = field === 'recommendations'
+                            ? []
+                            : `未提供${field}`;
+                    }
+                });
+
+                // 数值字段格式化
+                const numericFields = ['systolicBloodPressure', 'diastolicBloodPressure', 'bloodSugar', 'bmiValue'];
+                numericFields.forEach(field => {
+                    if (processed.parsedContent[field] !== undefined && processed.parsedContent[field] !== null) {
+                        processed.parsedContent[field] = Number(processed.parsedContent[field]);
+                    }
+                });
+
+                return processed;
+            } catch (e) {
+                console.error('报告数据预处理失败:', e);
+                return {
+                    ...report,
+                    parsedContent: {
+                        riskDescription: '报告数据异常',
+                        bloodPressureAssessment: '数据错误',
+                        bloodSugarAssessment: '数据错误',
+                        bmiAssessment: '数据错误',
+                        recommendations: ['请联系管理员']
+                    }
+                };
+            }
+        }
+
+
+        // 辅助函数：创建评估项
+        function createAssessmentItem(title, icon, description) {
+            return `
+        <div class="flex items-start space-x-4 mb-4">
+            <div class="w-8 h-8 bg-primary bg-opacity-10 rounded-lg flex items-center justify-center">
+                <i class="${icon} text-primary"></i>
+            </div>
+            <div class="flex-1">
+                <h4 class="font-medium mb-1">${title}</h4>
+                <p class="text-gray-600">${description}</p>
+            </div>
+        </div>
+    `;
+        }
+
+
+        async function viewHistoryReports() {
+            try {
+                setButtonLoading(viewHistoryBtn, true);
+                // 调用API获取历史报告
+                const response = await apiClient.getHealthHistory();
+                let reports = response.data || response; // 兼容不同响应格式
+
+                displayHistoryReports(reports);
+                showSection(historyReportSection);
+            } catch (error) {
+                showError('获取历史报告失败:' + error.message);
+            } finally {
+                setButtonLoading(viewHistoryBtn, false);
+            }
+        }
+
+        function displayHistoryReports(reports) {
+            historyReportList.innerHTML = '';
+
+            if (!Array.isArray(reports) || reports.length === 0) {
+                historyReportList.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-6 py-4 text-center text-gray-500">暂无历史报告记录</td>
+            </tr>
+        `;
+                return;
+            }
+
+            reports.forEach(report => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+
+                const assessmentDateDisplay = formatDateTime(report.assessmentDate);
+                const recordDateDisplay = formatDateForDisplay(report.recordDate);
+
+                row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap">${assessmentDateDisplay}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${recordDateDisplay}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="risk-tag ${getRiskLevelClass(report.riskLevel)}">
+                    ${getRiskLevelText(report.riskLevel)}
+                </span>
+            </td>
+            <td class="px-6 py-4">${report.riskDescription || '无'}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <button class="text-primary hover:text-primary-dark mr-3 view-btn" data-id="${report.id}">查看</button>
+                <button class="text-red-500 hover:text-red-700 delete-btn" data-id="${report.id}">删除</button>
+                <button class="text-blue-500 hover:text-blue-700 ml-3 download-btn" onclick="downloadReport(${report.id})">下载</button> <!-- 新增下载按钮 -->
+            </td>
+        `;
+
+                historyReportList.appendChild(row);
+            });
+        }
+
+
+        function showSuccess(message) {
+            const successAlert = document.createElement('div');
+            successAlert.className = 'fixed top-20 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded';
+            successAlert.innerHTML = `
+        <span class="font-bold">成功!</span>
+        <span>${message}</span>
+        <span class="absolute top-0 bottom-0 right-0 px-4 py-3" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </span>
+    `;
+
+            document.body.appendChild(successAlert);
+            setTimeout(() => successAlert.remove(), 3000);
+        }
+
+        // 设置风险等级样式
+        function setRiskLevel(level) {
+            const riskLevelTag = document.getElementById('riskLevelTag');
+            const levelMap = {
+                'high': { text: '高风险', class: 'risk-high' },
+                'medium': { text: '中风险', class: 'risk-medium' },
+                'low': { text: '低风险', class: 'risk-low' },
+                'unknown': { text: '未评估', class: '' }
+            };
+
+            const levelInfo = levelMap[level] || levelMap['unknown'];
+            riskLevelTag.textContent = levelInfo.text;
+            riskLevelTag.className = 'risk-tag ' + levelInfo.class;
+        }
+
+        function getRiskLevelClass(level) {
+            switch (level) {
+                case 'low': return 'risk-low';
+                case 'medium': return 'risk-medium';
+                case 'high': return 'risk-high';
+                default: return '';
+            }
+        }
+
+        function getRiskLevelText(level) {
+            switch (level) {
+                case 'low': return '低风险';
+                case 'medium': return '中风险';
+                case 'high': return '高风险';
+                default: return '未评估';
+            }
+        }
+
+        async function generateReport() {
+            const selectedDate = datepicker.value;
+            if (!selectedDate) {
+                showError('请先选择日期');
+                return;
+            }
+
+            try {
+                setButtonLoading(generateReportBtn, true);
+                const healthRecord = await apiClient.getHealthRecordByDate(selectedDate);
+
+                if (!healthRecord || Object.keys(healthRecord).length === 0) {
+                    throw new Error('未找到该日期的健康记录');
+                }
+
+                const requestData = {
+                    systolicBloodPressure: healthRecord.systolic_blood_pressure || 0,
+                    diastolicBloodPressure: healthRecord.diastolic_blood_pressure || 0,
+                    bloodSugar: healthRecord.blood_sugar || 0,
+                    weight: healthRecord.weight || 0,
+                    height: healthRecord.height || 0,
+                    recordDate: selectedDate // 记录日期为用户选择日期
+                };
+
+                const response = await apiClient.generateHealthReport(selectedDate, requestData);
+
+                if (response && response.data) {
+                    // **关键修复：从响应中获取报告ID并赋值**
+                    currentReportId = response.data.id;
+                    await displayHealthReport(response.data);
+                    showSection(currentReportSection);
+                } else {
+                    throw new Error('服务器返回了无效的报告数据');
+                }
+            } catch (error) {
+                console.error('生成报告失败:', error);
+                showError(`生成报告失败: ${error.message}`);
+            } finally {
+                setButtonLoading(generateReportBtn, false);
+            }
+        }
+
+        async function checkAndViewReport() {
+            const selectedDate = datepicker.value;
+            if (!selectedDate) {
+                showError('请先选择日期');
+                return;
+            }
+
+            try {
+                setButtonLoading(confirmDateBtn, true);
+                const history = await apiClient.getHealthHistory();
+                let reports = [];
+
+                if (Array.isArray(history)) {
+                    reports = history;
+                } else if (history && Array.isArray(history.data)) {
+                    reports = history.data;
+                } else {
+                    throw new Error('服务器返回的数据格式不正确');
+                }
+
+                const report = reports.find(r => r.recordDate === selectedDate || r.assessmentDate.includes(selectedDate));
+                if (report) {
+                    // **关键修复：使用报告对象的id属性**
+                    currentReportId = report.id;
+                    const reportData = await apiClient.getReportDetail(report.id);
+                    displayHealthReport(reportData);
+                    showSection(currentReportSection);
+                } else if (confirm('该日期没有评估报告，是否现在生成？')) {
+                    await generateReport();
+                }
+            } catch (error) {
+                showError('检查报告失败: ' + error.message);
+            } finally {
+                setButtonLoading(confirmDateBtn, false);
+            }
+        }
+
+        async function clearHistoryReports() {
+            if (!confirm('确定要清空所有历史记录吗？此操作不可恢复！')) return;
+
+            try {
+                setButtonLoading(clearHistoryBtn, true);
+                await apiClient.clearHistory();
+                await viewHistoryReports();
+            } catch (error) {
+                showError('清空历史记录失败:' + error.message);
+            } finally {
+                setButtonLoading(clearHistoryBtn, false);
+            }
+        }
+
+        async function handleViewReport(reportId) {
+            try {
+                console.log('[DEBUG] 开始加载报告ID:', reportId);
+
+                const viewButton = document.querySelector(`.view-btn[data-id="${reportId}"]`);
+                if (viewButton) {
+                    setButtonLoading(viewButton, true);
+                }
+
+                // 调用 API 获取报告详情
+                const reportData = await apiClient.getReportDetail(reportId);
+
+                // 验证返回数据的完整性
+                if (!reportData || !reportData.parsedContent) {
+                    throw new Error('报告数据不完整');
+                }
+
+                // **关键修复：更新当前报告ID**
+                currentReportId = reportId;
+
+                // 打印解析后的报告数据用于调试
+                console.log('[DEBUG] 解析后的报告数据:', reportData);
+
+                // 显示报告
+                displayHealthReport(reportData);
+                showSection(currentReportSection);
+
+            } catch (error) {
+                console.error(`[ERROR] 加载报告 ${reportId} 失败:`, error);
+
+                let errorMessage = '查看报告失败';
+                if (error.message.includes('服务器返回格式不正确')) {
+                    errorMessage += ': 服务器数据异常，请稍后重试';
+                } else if (error.message.includes('解析报告内容失败')) {
+                    errorMessage += ': 报告内容格式错误，请联系管理员';
+                } else {
+                    errorMessage += ': ' + error.message;
+                }
+
+                showError(errorMessage);
+            } finally {
+                const viewButton = document.querySelector(`.view-btn[data-id="${reportId}"]`);
+                if (viewButton) {
+                    setButtonLoading(viewButton, false);
+                }
+            }
+        }
+
+        // 在获取报告后的处理
+        apiClient.getReportDetail(reportId)
+            .then(response => {
+                if (response && response.data) {
+                    displayHealthReport(response.data);
+                } else {
+                    throw new Error('无效的响应数据');
+                }
+            })
+            .catch(error => {
+                console.error('加载报告失败:', error);
+                showError('加载报告失败: ' + error.message);
+            });
+
+        // 新增：删除报告处理函数
+        async function handleDeleteReport(reportId) {
+            if (!confirm('确定要删除此报告吗？')) return;
+
+            try {
+                setButtonLoading(document.querySelector('.delete-btn[data-id="' + reportId + '"]'), true);
+                const result = await apiClient.deleteReport(reportId);
+
+                if (result.success || result.message === '报告已被删除') {
+                    showSuccess('报告删除成功');
+                    await viewHistoryReports(); // 刷新历史列表
+                } else {
+                    showError(result.message || '删除报告失败');
+                }
+            } catch (error) {
+                showError(`删除报告失败: ${error.message}`);
+            } finally {
+                // 恢复所有删除按钮状态
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.innerHTML = '删除';
+                    btn.disabled = false;
+                });
+            }
+        }
+
+        // 日期范围查询函数
+        async function searchByDateRange() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            if (!startDate || !endDate) {
+                showError('请选择开始和结束日期');
+                return;
+            }
+
+            if (new Date(startDate) > new Date(endDate)) {
+                showError('开始日期不能晚于结束日期');
+                return;
+            }
+
+            try {
+                // 显示健康数据趋势图表区域
+                const chartSection = document.getElementById('healthDataChartSection');
+                if (chartSection) {
+                    chartSection.classList.remove('hidden');
+                }
+
+                // 生成模拟数据
+                const dateRangeData = generateDateRangeData(startDate, endDate);
+                
+                // 渲染图表
+                renderBloodPressureChart(dateRangeData);
+                renderBloodSugarChart(dateRangeData);
+            } catch (error) {
+                showError('查询数据失败: ' + error.message);
+            }
+        }
+
+        // 生成日期范围的模拟数据
+        function generateDateRangeData(startDate, endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const data = [];
+
+            let currentDate = new Date(start);
+            while (currentDate <= end) {
+                const dateStr = currentDate.toISOString().split('T')[0];
+                data.push({
+                    date: dateStr,
+                    systolic: Math.floor(Math.random() * 30) + 110, // 110-140
+                    diastolic: Math.floor(Math.random() * 20) + 70, // 70-90
+                    bloodSugar: (Math.random() * 2 + 4).toFixed(1) // 4-6
+                });
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            return data;
+        }
+
+        // 渲染血压趋势图表
+        function renderBloodPressureChart(data) {
+            const ctx = document.getElementById('bloodPressureChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(item => item.date),
+                    datasets: [
+                        {
+                            label: '收缩压',
+                            data: data.map(item => item.systolic),
+                            borderColor: '#FF6B6B',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: '舒张压',
+                            data: data.map(item => item.diastolic),
+                            borderColor: '#4ECDC4',
+                            backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 60,
+                            max: 150
+                        }
+                    }
+                }
+            });
+        }
+
+        // 渲染血糖趋势图表
+        function renderBloodSugarChart(data) {
+            const ctx = document.getElementById('bloodSugarChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(item => item.date),
+                    datasets: [{
+                        label: '血糖值',
+                        data: data.map(item => item.bloodSugar),
+                        borderColor: '#FFD166',
+                        backgroundColor: 'rgba(255, 209, 102, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 3,
+                            max: 8
+                        }
+                    }
+                }
+            });
+        }
+
+        // 格式化日期时间
+        function formatDateTime(dateTimeString) {
+            if (!dateTimeString) return '未指定时间';
+
+            try {
+                const date = new Date(dateTimeString);
+                if (isNaN(date.getTime())) {
+                    return dateTimeString;
+                }
+
+                const pad = num => num.toString().padStart(2, '0');
+                return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+            } catch (e) {
+                console.error('日期时间格式化错误:', e);
+                return dateTimeString;
+            }
+        }
+
+        function padZero(num) {
+            return num < 10 ? `0${num}` : num;
+        }
+
+        function showSection(section) {
+            currentReportSection.classList.toggle('hidden', section !== currentReportSection);
+            historyReportSection.classList.toggle('hidden', section !== historyReportSection);
+        }
+
+        // 点击页面其他地方时隐藏下拉菜单
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.avatar-dropdown').forEach(dropdown => {
+                dropdown.classList.remove('show');
+            });
+        });
+    });
+</script>
+</body>
+</html>
